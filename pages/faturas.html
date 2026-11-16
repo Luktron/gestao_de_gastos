@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VELORA — Faturas</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../css/responsivo.css" />
+  <script src="../js/velora.js" defer></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0a0a0a; color: #fff; min-height: 100vh; }
+    .layout { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 240px; min-height: 100vh; background: #111;
+      border-right: 1px solid #1e1e1e; display: flex; flex-direction: column;
+      padding: 32px 0; position: fixed; top: 0; left: 0;
+      z-index: 100; transition: transform .3s ease;
+    }
+    .sidebar-logo { font-size: 22px; font-weight: 800; letter-spacing: 2px; padding: 0 24px 36px; }
+    .sidebar-logo span { color: #e50925; }
+    .sidebar-menu { display: flex; flex-direction: column; gap: 4px; flex: 1; padding: 0 12px; }
+    .sidebar-menu a {
+      display: flex; align-items: center; gap: 12px; padding: 11px 12px;
+      color: #888; text-decoration: none; font-size: 13px; border-radius: 8px; transition: all .2s;
+    }
+    .sidebar-menu a:hover, .sidebar-menu a.active {
+      background: linear-gradient(90deg,#a90019,#69000f); color: #fff;
+    }
+    .sidebar-menu a i { width: 18px; text-align: center; font-size: 14px; }
+    .sidebar-footer { padding: 24px; border-top: 1px solid #1e1e1e; font-size: 11px; color: #444; letter-spacing: 1px; }
+    .hamburger {
+      display: none; position: fixed; top: 18px; left: 18px; z-index: 200;
+      background: #1a1a1a; border: 1px solid #2a2a2a; color: #e74c3c;
+      width: 42px; height: 42px; border-radius: 8px; font-size: 18px;
+      cursor: pointer; align-items: center; justify-content: center;
+    }
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 99; }
+    /* MAIN */
+    .main {
+      margin-left: 240px; flex: 1; padding: 40px 40px 60px;
+      background: radial-gradient(ellipse 60% 40% at 90% 0%, rgba(139,0,0,.15) 0%, transparent 70%), #0a0a0a;
+    }
+
+    /* TOPBAR */
+    .topbar { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 16px; }
+    .topbar-left h1 { font-size: 22px; font-weight: 800; }
+    .topbar-left p { font-size: 13px; color: #555; margin-top: 3px; }
+    .topbar-right { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+    .btn-new {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: linear-gradient(135deg, #c0392b, #8b0000);
+      color: #fff; border: none; border-radius: 10px;
+      padding: 11px 22px; font-size: 14px; font-weight: 700;
+      cursor: pointer; box-shadow: 0 4px 20px rgba(192,57,43,.35);
+      transition: all .2s; white-space: nowrap;
+    }
+    .btn-new:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(192,57,43,.5); }
+
+    .filter-select {
+      background: #141414; border: 1px solid #2a2a2a; color: #ccc;
+      border-radius: 8px; padding: 9px 12px; font-size: 13px;
+      outline: none; transition: border-color .2s; cursor: pointer;
+    }
+    .filter-select:focus { border-color: #c0392b; }
+
+    /* SUMMARY CARDS */
+    .summary-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 24px; }
+    .s-card {
+      background: #141414; border: 1px solid #1e1e1e; border-radius: 14px; padding: 20px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .s-card-top { display: flex; align-items: center; justify-content: space-between; }
+    .s-card-label { font-size: 11px; color: #666; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; }
+    .s-card-icon { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+    .icon-total   { background: rgba(192,57,43,.15); color: #e74c3c; }
+    .icon-paid    { background: rgba(46,204,113,.12); color: #2ecc71; }
+    .icon-pending { background: rgba(243,156,18,.12); color: #f39c12; }
+    .icon-next    { background: rgba(52,152,219,.12); color: #3498db; }
+    .s-card-value { font-size: 22px; font-weight: 800; }
+    .s-card-value.green { color: #2ecc71; }
+    .s-card-value.red   { color: #e74c3c; }
+    .s-card-value.yellow{ color: #f39c12; }
+    .s-card-value.blue  { color: #3498db; }
+    .s-card-sub { font-size: 11px; color: #555; }
+
+    /* TABLE CARD */
+    .table-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 16px; overflow: hidden; }
+    .table-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 24px; border-bottom: 1px solid #1e1e1e; flex-wrap: wrap; gap: 10px;
+    }
+    .table-header-title { font-size: 15px; font-weight: 700; }
+    .table-meta { font-size: 12px; color: #555; margin-top: 2px; }
+
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      padding: 12px 16px; text-align: left; font-size: 11px;
+      font-weight: 600; color: #555; letter-spacing: .5px;
+      text-transform: uppercase; border-bottom: 1px solid #1e1e1e; white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid #1a1a1a; transition: background .15s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,.02); }
+    tbody td { padding: 14px 16px; font-size: 14px; vertical-align: middle; }
+
+    .td-name { font-weight: 600; }
+    .td-name small { display: block; font-size: 11px; color: #555; font-weight: 400; margin-top: 2px; }
+    .td-date { color: #888; font-size: 13px; white-space: nowrap; }
+    .td-value { font-weight: 700; white-space: nowrap; }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 600; white-space: nowrap;
+    }
+    .badge-paid    { background: rgba(46,204,113,.12); color: #2ecc71; }
+    .badge-pending { background: rgba(243,156,18,.12); color: #f39c12; }
+    .badge-overdue { background: rgba(231,76,60,.15);  color: #e74c3c; }
+    .badge-soon    { background: rgba(52,152,219,.12); color: #3498db; }
+    .badge-cat     { background: #1e1e1e; color: #aaa; }
+
+    .action-btns { display: flex; gap: 6px; }
+    .action-btn {
+      width: 30px; height: 30px; border-radius: 7px; border: 1px solid #2a2a2a;
+      background: #1a1a1a; color: #666; cursor: pointer; font-size: 12px;
+      display: flex; align-items: center; justify-content: center; transition: all .2s;
+    }
+    .action-btn:hover { border-color: #c0392b; color: #e74c3c; }
+    .action-btn.pay:hover { border-color: #2ecc71; color: #2ecc71; background: rgba(46,204,113,.08); }
+    .action-btn.del:hover { border-color: #e74c3c; background: rgba(231,76,60,.1); }
+
+    /* ALERT BANNER */
+    .alert-banner {
+      display: flex; align-items: center; gap: 12px;
+      background: rgba(231,76,60,.08); border: 1px solid rgba(231,76,60,.2);
+      border-radius: 12px; padding: 14px 18px; margin-bottom: 20px;
+      font-size: 13px; color: #e74c3c;
+    }
+    .alert-banner i { font-size: 16px; flex-shrink: 0; }
+
+    /* EMPTY */
+    .empty-state { text-align: center; padding: 60px 20px; color: #444; }
+    .empty-state i { font-size: 40px; margin-bottom: 12px; display: block; }
+
+    /* MODAL */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.75); z-index: 300;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #141414; border: 1px solid #222; border-radius: 20px;
+      padding: 36px; width: 100%; max-width: 520px;
+      max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 24px 80px rgba(0,0,0,.7);
+    }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+    .modal-title { font-size: 18px; font-weight: 800; }
+    .modal-close {
+      width: 32px; height: 32px; border-radius: 8px; border: 1px solid #2a2a2a;
+      background: #1a1a1a; color: #666; cursor: pointer; font-size: 14px;
+      display: flex; align-items: center; justify-content: center; transition: all .2s;
+    }
+    .modal-close:hover { border-color: #e74c3c; color: #e74c3c; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-grid .full { grid-column: 1 / -1; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 11px; font-weight: 600; color: #666; letter-spacing: .5px; text-transform: uppercase; }
+    .field input, .field select, .field textarea {
+      background: #1a1a1a; border: 1px solid #2a2a2a; color: #fff;
+      border-radius: 9px; padding: 11px 13px; font-size: 13px;
+      outline: none; transition: border-color .2s; font-family: inherit;
+    }
+    .field input::placeholder, .field textarea::placeholder { color: #444; }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: #c0392b; }
+    .field textarea { resize: vertical; min-height: 70px; }
+
+    .modal-footer { display: flex; gap: 10px; margin-top: 24px; }
+    .btn-save {
+      flex: 1; padding: 13px; background: linear-gradient(135deg, #c0392b, #8b0000);
+      color: #fff; border: none; border-radius: 10px; font-size: 14px;
+      font-weight: 700; cursor: pointer; transition: all .2s;
+    }
+    .btn-save:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(192,57,43,.4); }
+    .btn-cancel {
+      padding: 13px 20px; background: transparent; border: 1px solid #2a2a2a;
+      color: #666; border-radius: 10px; font-size: 14px; cursor: pointer; transition: all .2s;
+    }
+    .btn-cancel:hover { border-color: #444; color: #aaa; }
+
+    /* PAY MODAL */
+    .pay-info {
+      background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px;
+      padding: 16px; margin-bottom: 20px;
+    }
+    .pay-info-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+    .pay-info-row span:first-child { color: #666; }
+    .pay-info-row span:last-child  { font-weight: 600; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 28px; right: 28px; z-index: 400;
+      background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px;
+      padding: 14px 20px; font-size: 13px; font-weight: 500;
+      display: flex; align-items: center; gap: 10px;
+      transform: translateY(80px); opacity: 0;
+      transition: all .3s ease; pointer-events: none;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { border-color: rgba(46,204,113,.3); color: #2ecc71; }
+    .toast.error   { border-color: rgba(231,76,60,.3);  color: #e74c3c; }
+
+    /* RESPONSIVE */
+    @media (max-width: 1100px) { .summary-grid { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width: 900px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .overlay.open { display: block; }
+      .hamburger { display: flex; }
+      .main { margin-left: 0; padding: 80px 16px 40px; }
+      .form-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) { .summary-grid { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+<button class="hamburger" id="hamburger"><i class="fa fa-bars"></i></button>
+<div class="overlay" id="overlay"></div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">VEL<span>ORA</span></div>
+    <nav class="sidebar-menu">
+      <a href="dashboard.html"><i class="fa fa-chart-pie"></i> Visão geral</a>
+      <a href="transacoes.html"><i class="fa fa-arrow-right-arrow-left"></i> Transações</a>
+      <a href="contas.html"><i class="fa fa-credit-card"></i> Cartões e contas</a>
+      <a href="faturas.html" class="active"><i class="fa fa-file-invoice-dollar"></i> Faturas</a>
+      <a href="planejamento.html"><i class="fa fa-bullseye"></i> Orçamento e metas</a>
+      <a href="configuracoes.html"><i class="fa fa-sliders"></i> Categorias e config.</a>
+    </nav>
+    <div class="sidebar-footer">© 2025 VELORA</div>
+  </aside>
+
+  <main class="main">
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1>Faturas e contas a pagar</h1>
+        <p>Acompanhe suas faturas e evite juros.</p>
+      </div>
+      <div class="topbar-right">
+        <select class="filter-select" id="fStatus">
+          <option value="">Todos os status</option>
+          <option value="paid">Pago</option>
+          <option value="pending">Pendente</option>
+          <option value="overdue">Atrasado</option>
+        </select>
+        <select class="filter-select" id="fPeriod">
+          <option value="month">Este mês</option>
+          <option value="3months">Próximos 3 meses</option>
+          <option value="all">Todos</option>
+        </select>
+        <button class="btn-new" id="btnNew"><i class="fa fa-plus"></i> Nova conta</button>
+      </div>
+    </div>
+
+    <!-- ALERT BANNER -->
+    <div class="alert-banner" id="alertBanner" style="display:none">
+      <i class="fa fa-triangle-exclamation"></i>
+      <span id="alertText"></span>
+    </div>
+
+    <!-- SUMMARY CARDS -->
+    <div class="summary-grid">
+      <div class="s-card">
+        <div class="s-card-top">
+          <span class="s-card-label">Total do mês</span>
+          <div class="s-card-icon icon-total"><i class="fa fa-file-invoice-dollar"></i></div>
+        </div>
+        <div class="s-card-value" id="valTotal">R$ 0,00</div>
+        <div class="s-card-sub" id="subTotal">0 contas</div>
+      </div>
+      <div class="s-card">
+        <div class="s-card-top">
+          <span class="s-card-label">Total pago</span>
+          <div class="s-card-icon icon-paid"><i class="fa fa-circle-check"></i></div>
+        </div>
+        <div class="s-card-value green" id="valPaid">R$ 0,00</div>
+        <div class="s-card-sub" id="subPaid">0 pagas</div>
+      </div>
+      <div class="s-card">
+        <div class="s-card-top">
+          <span class="s-card-label">Total pendente</span>
+          <div class="s-card-icon icon-pending"><i class="fa fa-clock"></i></div>
+        </div>
+        <div class="s-card-value yellow" id="valPending">R$ 0,00</div>
+        <div class="s-card-sub" id="subPending">0 pendentes</div>
+      </div>
+      <div class="s-card">
+        <div class="s-card-top">
+          <span class="s-card-label">Próximo vencimento</span>
+          <div class="s-card-icon icon-next"><i class="fa fa-calendar-day"></i></div>
+        </div>
+        <div class="s-card-value blue" id="valNext">—</div>
+        <div class="s-card-sub" id="subNext">—</div>
+      </div>
+    </div>
+
+    <!-- TABLE CARD -->
+    <div class="table-card">
+      <div class="table-header">
+        <div>
+          <div class="table-header-title">Contas a pagar</div>
+          <div class="table-meta" id="tableMeta">0 registros</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Categoria</th>
+              <th>Emissão</th>
+              <th>Vencimento</th>
+              <th>Pagamento</th>
+              <th>Valor</th>
+              <th>Recorrência</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+        <div class="empty-state" id="emptyState" style="display:none">
+          <i class="fa fa-file-invoice"></i>
+          <p>Nenhuma conta encontrada.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL FORM -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Nova conta</div>
+      <button class="modal-close" id="modalClose"><i class="fa fa-xmark"></i></button>
+    </div>
+    <div class="form-grid">
+      <div class="field full">
+        <label>Nome da conta</label>
+        <input type="text" id="fName" placeholder="Ex: Conta de luz, Aluguel..." />
+      </div>
+      <div class="field">
+        <label>Categoria</label>
+        <select id="fCat">
+          <option>Contas</option><option>Moradia</option><option>Transporte</option>
+          <option>Saúde</option><option>Educação</option><option>Lazer</option><option>Outros</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Valor (R$)</label>
+        <input type="number" id="fAmount" placeholder="0,00" min="0" step="0.01" />
+      </div>
+      <div class="field">
+        <label>Data de emissão</label>
+        <input type="date" id="fIssue" />
+      </div>
+      <div class="field">
+        <label>Data de vencimento</label>
+        <input type="date" id="fDue" />
+      </div>
+      <div class="field">
+        <label>Conta para pagamento</label>
+        <select id="fAccount">
+          <option>Conta corrente</option><option>Poupança</option>
+          <option>Cartão de crédito</option><option>Dinheiro</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Recorrência</label>
+        <select id="fRecurrence">
+          <option value="none">Sem recorrência</option>
+          <option value="monthly">Mensal</option>
+          <option value="bimonthly">Bimestral</option>
+          <option value="quarterly">Trimestral</option>
+          <option value="yearly">Anual</option>
+        </select>
+      </div>
+      <div class="field full">
+        <label>Descrição (opcional)</label>
+        <textarea id="fDesc" placeholder="Observações sobre esta conta..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="btnCancel">Cancelar</button>
+      <button class="btn-save" id="btnSave"><i class="fa fa-check"></i> Salvar conta</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PAY -->
+<div class="modal-overlay" id="payOverlay">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">Registrar pagamento</div>
+      <button class="modal-close" id="payClose"><i class="fa fa-xmark"></i></button>
+    </div>
+    <div class="pay-info" id="payInfo"></div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Data do pagamento</label>
+        <input type="date" id="payDate" />
+      </div>
+      <div class="field">
+        <label>Conta utilizada</label>
+        <select id="payAccount">
+          <option>Conta corrente</option><option>Poupança</option>
+          <option>Cartão de crédito</option><option>Dinheiro</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="payCancelBtn">Cancelar</button>
+      <button class="btn-save" style="background:linear-gradient(135deg,#27ae60,#1e8449)" id="payConfirmBtn">
+        <i class="fa fa-check"></i> Confirmar pagamento
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Helpers ──
+const fmt     = v => VELORA.fmt(v);
+const fmtDate = s => VELORA.fmtDate(s);
+const today   = () => VELORA.todayISO();
+const genId   = () => VELORA.genId();
+const showToast = (type, msg) => VELORA.showToast(type, msg);
+
+// ── Storage ──
+function getBills()     { return VELORA.db.getBills(); }
+function saveBills(arr) { VELORA.db.setBills(arr); }
+
+function addTransaction(tx) {
+  const arr = VELORA.db.getTransactions();
+  arr.unshift(tx);
+  VELORA.db.setTransactions(arr);
+}
+
+// ── Status logic ──
+function computeStatus(bill) {
+  if (bill.status === 'paid') return 'paid';
+  const due  = new Date(bill.due  + 'T00:00:00');
+  const now  = new Date(); now.setHours(0,0,0,0);
+  const diff = Math.ceil((due - now) / 86400000);
+  if (diff < 0)      return 'overdue';
+  if (diff <= 5)     return 'soon';
+  return 'pending';
+}
+
+const statusLabel = { paid:'Pago', pending:'Pendente', overdue:'Atrasado', soon:'Vence em breve' };
+const statusClass = { paid:'badge-paid', pending:'badge-pending', overdue:'badge-overdue', soon:'badge-soon' };
+const recurrenceLabel = { none:'Única', monthly:'Mensal', bimonthly:'Bimestral', quarterly:'Trimestral', yearly:'Anual' };
+
+// ── Filters ──
+const fStatus = document.getElementById('fStatus');
+const fPeriod = document.getElementById('fPeriod');
+
+function getFiltered() {
+  let data = getBills();
+  const now = new Date();
+
+  if (fPeriod.value === 'month') {
+    data = data.filter(b => {
+      const d = new Date(b.due + 'T00:00:00');
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    });
+  } else if (fPeriod.value === '3months') {
+    const end = new Date(now); end.setMonth(end.getMonth() + 3);
+    data = data.filter(b => { const d = new Date(b.due + 'T00:00:00'); return d >= now && d <= end; });
+  }
+
+  if (fStatus.value) {
+    data = data.filter(b => computeStatus(b) === fStatus.value);
+  }
+
+  return data.sort((a,b) => a.due > b.due ? 1 : -1);
+}
+
+// ── Render ──
+function render() {
+  const all  = getBills();
+  const now  = new Date();
+  const thisMonth = all.filter(b => {
+    const d = new Date(b.due + 'T00:00:00');
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+
+  const totalAmt   = thisMonth.reduce((s,b) => s + b.amount, 0);
+  const paidItems  = thisMonth.filter(b => b.status === 'paid');
+  const pendItems  = thisMonth.filter(b => b.status !== 'paid');
+  const paidAmt    = paidItems.reduce((s,b) => s + b.amount, 0);
+  const pendAmt    = pendItems.reduce((s,b) => s + b.amount, 0);
+
+  document.getElementById('valTotal').textContent   = fmt(totalAmt);
+  document.getElementById('subTotal').textContent   = `${thisMonth.length} conta${thisMonth.length!==1?'s':''}`;
+  document.getElementById('valPaid').textContent    = fmt(paidAmt);
+  document.getElementById('subPaid').textContent    = `${paidItems.length} paga${paidItems.length!==1?'s':''}`;
+  document.getElementById('valPending').textContent = fmt(pendAmt);
+  document.getElementById('subPending').textContent = `${pendItems.length} pendente${pendItems.length!==1?'s':''}`;
+
+  // Next due
+  const upcoming = all
+    .filter(b => b.status !== 'paid')
+    .sort((a,b) => a.due > b.due ? 1 : -1);
+  if (upcoming.length) {
+    document.getElementById('valNext').textContent = fmtDate(upcoming[0].due);
+    document.getElementById('subNext').textContent = upcoming[0].name;
+  } else {
+    document.getElementById('valNext').textContent = '—';
+    document.getElementById('subNext').textContent = 'Nenhuma pendente';
+  }
+
+  // Alert banner
+  const overdue = all.filter(b => computeStatus(b) === 'overdue');
+  const soon    = all.filter(b => computeStatus(b) === 'soon');
+  const banner  = document.getElementById('alertBanner');
+  if (overdue.length || soon.length) {
+    banner.style.display = 'flex';
+    const parts = [];
+    if (overdue.length) parts.push(`${overdue.length} conta${overdue.length>1?'s':''} atrasada${overdue.length>1?'s':''}`);
+    if (soon.length)    parts.push(`${soon.length} vencendo em breve`);
+    document.getElementById('alertText').textContent = `Atenção: ${parts.join(' e ')}. Regularize para evitar juros.`;
+  } else {
+    banner.style.display = 'none';
+  }
+
+  // Table
+  const data   = getFiltered();
+  const tbody  = document.getElementById('tableBody');
+  const empty  = document.getElementById('emptyState');
+  document.getElementById('tableMeta').textContent = `${data.length} registro${data.length!==1?'s':''}`;
+
+  if (!data.length) {
+    tbody.innerHTML = ''; empty.style.display = 'block'; return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = data.map(b => {
+    const st = computeStatus(b);
+    return `
+    <tr>
+      <td class="td-name">${b.name}<small>${b.desc || ''}</small></td>
+      <td><span class="badge badge-cat">${b.category}</span></td>
+      <td class="td-date">${fmtDate(b.issue)}</td>
+      <td class="td-date" style="${st==='overdue'?'color:#e74c3c;font-weight:600':st==='soon'?'color:#f39c12':''}">  
+        ${fmtDate(b.due)}
+      </td>
+      <td class="td-date">${b.paidDate ? fmtDate(b.paidDate) : '—'}</td>
+      <td class="td-value">${fmt(b.amount)}</td>
+      <td><span class="badge badge-cat">${recurrenceLabel[b.recurrence]||'Única'}</span></td>
+      <td><span class="badge ${statusClass[st]}">${statusLabel[st]}</span></td>
+      <td>
+        <div class="action-btns">
+          ${st !== 'paid' ? `<button class="action-btn pay" onclick="openPay(${b.id})" title="Registrar pagamento"><i class="fa fa-check"></i></button>` : ''}
+          <button class="action-btn" onclick="openEdit(${b.id})" title="Editar"><i class="fa fa-pen"></i></button>
+          <button class="action-btn del" onclick="deleteBill(${b.id})" title="Excluir"><i class="fa fa-trash"></i></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+[fStatus, fPeriod].forEach(el => el.addEventListener('change', render));
+
+// ── Modal form ──
+let editingId = null;
+
+function openModal() { document.getElementById('modalOverlay').classList.add('open'); }
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); editingId = null; }
+
+document.getElementById('btnNew').addEventListener('click', () => {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'Nova conta';
+  document.getElementById('fName').value      = '';
+  document.getElementById('fCat').value       = 'Contas';
+  document.getElementById('fAmount').value    = '';
+  document.getElementById('fIssue').value     = today();
+  document.getElementById('fDue').value       = today();
+  document.getElementById('fAccount').value   = 'Conta corrente';
+  document.getElementById('fRecurrence').value= 'none';
+  document.getElementById('fDesc').value      = '';
+  openModal();
+});
+
+document.getElementById('modalClose').addEventListener('click', closeModal);
+document.getElementById('btnCancel').addEventListener('click', closeModal);
+document.getElementById('modalOverlay').addEventListener('click', e => { if(e.target===e.currentTarget) closeModal(); });
+
+document.getElementById('btnSave').addEventListener('click', () => {
+  const name   = document.getElementById('fName').value.trim();
+  const amount = parseFloat(document.getElementById('fAmount').value);
+  const due    = document.getElementById('fDue').value;
+  if (!name || !amount || !due || amount <= 0) { showToast('error', 'Preencha todos os campos obrigatórios.'); return; }
+
+  const bill = {
+    id:         editingId || genId(),
+    name,
+    category:   document.getElementById('fCat').value,
+    amount,
+    issue:      document.getElementById('fIssue').value,
+    due,
+    paidDate:   editingId ? (getBills().find(b=>b.id===editingId)||{}).paidDate||'' : '',
+    account:    document.getElementById('fAccount').value,
+    recurrence: document.getElementById('fRecurrence').value,
+    desc:       document.getElementById('fDesc').value.trim(),
+    status:     editingId ? (getBills().find(b=>b.id===editingId)||{}).status||'pending' : 'pending',
+  };
+
+  let arr = getBills();
+  if (editingId) {
+    arr = arr.map(b => b.id === editingId ? bill : b);
+    showToast('success', 'Conta atualizada!');
+  } else {
+    arr.unshift(bill);
+    // Auto-generate recurrences
+    if (bill.recurrence !== 'none') {
+      const monthsMap = { monthly:1, bimonthly:2, quarterly:3, yearly:12 };
+      const step = monthsMap[bill.recurrence] || 1;
+      for (let i = 1; i <= 3; i++) {
+        const d   = new Date(due + 'T00:00:00');
+        const iss = new Date(bill.issue + 'T00:00:00');
+        d.setMonth(d.getMonth() + step * i);
+        iss.setMonth(iss.getMonth() + step * i);
+        arr.unshift({ ...bill, id: genId(), due: d.toISOString().split('T')[0], issue: iss.toISOString().split('T')[0], paidDate:'', status:'pending' });
+      }
+    }
+    showToast('success', 'Conta salva!');
+  }
+  saveBills(arr);
+  closeModal();
+  render();
+});
+
+function openEdit(id) {
+  const b = getBills().find(b => b.id === id);
+  if (!b) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'Editar conta';
+  document.getElementById('fName').value       = b.name;
+  document.getElementById('fCat').value        = b.category;
+  document.getElementById('fAmount').value     = b.amount;
+  document.getElementById('fIssue').value      = b.issue;
+  document.getElementById('fDue').value        = b.due;
+  document.getElementById('fAccount').value    = b.account;
+  document.getElementById('fRecurrence').value = b.recurrence;
+  document.getElementById('fDesc').value       = b.desc;
+  openModal();
+}
+
+function deleteBill(id) {
+  if (!confirm('Excluir esta conta?')) return;
+  saveBills(getBills().filter(b => b.id !== id));
+  showToast('success', 'Conta excluída.');
+  render();
+}
+
+// ── Pay modal ──
+let payingId = null;
+
+function openPay(id) {
+  const b = getBills().find(b => b.id === id);
+  if (!b) return;
+  payingId = id;
+  document.getElementById('payInfo').innerHTML = `
+    <div class="pay-info-row"><span>Conta</span><span>${b.name}</span></div>
+    <div class="pay-info-row"><span>Valor</span><span>${fmt(b.amount)}</span></div>
+    <div class="pay-info-row"><span>Vencimento</span><span>${fmtDate(b.due)}</span></div>
+  `;
+  document.getElementById('payDate').value    = today();
+  document.getElementById('payAccount').value = b.account || 'Conta corrente';
+  document.getElementById('payOverlay').classList.add('open');
+}
+
+function closePayModal() { document.getElementById('payOverlay').classList.remove('open'); payingId = null; }
+document.getElementById('payClose').addEventListener('click', closePayModal);
+document.getElementById('payCancelBtn').addEventListener('click', closePayModal);
+document.getElementById('payOverlay').addEventListener('click', e => { if(e.target===e.currentTarget) closePayModal(); });
+
+document.getElementById('payConfirmBtn').addEventListener('click', () => {
+  const b       = getBills().find(b => b.id === payingId);
+  if (!b) return;
+  const payDate = document.getElementById('payDate').value;
+  const account = document.getElementById('payAccount').value;
+  if (!payDate) { showToast('error', 'Informe a data do pagamento.'); return; }
+
+  // Update bill
+  const arr = getBills().map(bill =>
+    bill.id === payingId ? { ...bill, status:'paid', paidDate: payDate, account } : bill
+  );
+  saveBills(arr);
+
+  // Register transaction
+  addTransaction({
+    id:          genId(),
+    type:        'expense',
+    description: b.name,
+    amount:      b.amount,
+    category:    b.category,
+    date:        payDate,
+    account,
+    payment:     'Boleto',
+    status:      'paid',
+    notes:       'Registrado via Faturas',
+  });
+
+  showToast('success', `"${b.name}" marcada como paga e lançada nas transações.`);
+  closePayModal();
+  render();
+});
+
+// ── Init ──
+render();
+window.addEventListener('velora:update', render);
+window.addEventListener('storage', render);
+</script>
+</body>
+</html>

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VELORA — Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <link rel="stylesheet" href="../css/responsivo.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="../js/velora.js"></script>
+  <script src="../js/apple-indicator.js"></script>
+</head>
+<body>
+
+<button class="hamburger" id="hamburger"><i class="fa fa-bars"></i></button>
+<div class="overlay" id="overlay"></div>
+
+<div class="dashboard">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">VEL<span>ORA</span></div>
+    <nav class="sidebar-menu">
+      <a href="dashboard.html" class="active"><i class="fa fa-chart-pie"></i> Visão geral</a>
+      <a href="transacoes.html"><i class="fa fa-arrow-right-arrow-left"></i> Transações</a>
+      <a href="contas.html"><i class="fa fa-credit-card"></i> Cartões e contas</a>
+      <a href="faturas.html"><i class="fa fa-file-invoice-dollar"></i> Faturas</a>
+      <a href="planejamento.html"><i class="fa fa-bullseye"></i> Orçamento e metas</a>
+      <a href="configuracoes.html"><i class="fa fa-sliders"></i> Categorias e config.</a>
+    </nav>
+    <div class="sidebar-footer">© 2025 VELORA</div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+      <div>
+        <h1>Visão geral</h1>
+        <p id="topbar-date">Carregando...</p>
+      </div>
+      <div class="header-right">
+        <div class="filters">
+          <select id="filterMonth"></select>
+          <select id="filterYear"></select>
+        </div>
+        <div class="user-chip">
+          <div class="user-avatar" id="userAvatar">?</div>
+          <span class="user-name" id="userName">Usuário</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUMMARY CARDS -->
+    <div class="cards-grid">
+
+      <div class="card">
+        <div class="card-icon"><i class="fa fa-wallet"></i></div>
+        <div class="card-title">Saldo disponível</div>
+        <div class="card-value" id="val-balance">R$ 0,00</div>
+        <div class="card-sub"><i class="fa fa-circle-info"></i> Receitas menos despesas</div>
+      </div>
+
+      <div class="card">
+        <div class="card-icon green-icon"><i class="fa fa-arrow-trend-up"></i></div>
+        <div class="card-title">Receitas do mês</div>
+        <div class="card-value income" id="val-income">R$ 0,00</div>
+        <div class="card-sub up" id="trend-income"><i class="fa fa-arrow-up"></i> —</div>
+      </div>
+
+      <div class="card">
+        <div class="card-icon"><i class="fa fa-arrow-trend-down"></i></div>
+        <div class="card-title">Despesas do mês</div>
+        <div class="card-value expense" id="val-expense">R$ 0,00</div>
+        <div class="card-sub down" id="trend-expense"><i class="fa fa-arrow-down"></i> —</div>
+      </div>
+
+    </div>
+
+    <!-- DASHBOARD GRID -->
+    <div class="dashboard-grid">
+
+      <!-- APPLE HEALTH CARD -->
+      <div class="panel apple-card" id="apple-card"></div>
+
+      <!-- DONUT CHART -->
+      <div class="panel">
+        <h2>Despesas por categoria <span id="donut-period">—</span></h2>
+        <div class="donut-wrap">
+          <div class="donut-container">
+            <canvas id="donutChart"></canvas>
+            <div class="donut-center">
+              <div class="donut-center-value" id="donut-total">R$ 0</div>
+              <div class="donut-center-label">Total</div>
+            </div>
+          </div>
+          <div class="legend" id="legend"></div>
+        </div>
+      </div>
+
+      <!-- BILLS -->
+      <div class="panel">
+        <h2>Próximas contas</h2>
+        <div class="bills-list" id="billsList"></div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+const now = new Date();
+document.getElementById('topbar-date').textContent =
+  now.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+
+const months   = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const selMonth = document.getElementById('filterMonth');
+const selYear  = document.getElementById('filterYear');
+
+months.forEach((m, i) => {
+  const o = new Option(m, i);
+  if (i === now.getMonth()) o.selected = true;
+  selMonth.appendChild(o);
+});
+for (let y = now.getFullYear(); y >= now.getFullYear() - 3; y--) {
+  const o = new Option(y, y);
+  if (y === now.getFullYear()) o.selected = true;
+  selYear.appendChild(o);
+}
+
+let donutChart = null;
+
+function render() {
+  const month = parseInt(selMonth.value);
+  const year  = parseInt(selYear.value);
+  const txs   = VELORA.db.getTransactions();
+
+  const filtered = txs.filter(t => {
+    const d = new Date(t.date + 'T00:00:00');
+    return d.getMonth() === month && d.getFullYear() === year;
+  });
+
+  const income  = filtered.filter(t => t.type === 'income').reduce((s,t)  => s + t.amount, 0);
+  const expense = filtered.filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0);
+  const balance = income - expense;
+
+  document.getElementById('val-balance').textContent = VELORA.fmt(balance);
+  document.getElementById('val-balance').className   = `card-value ${balance < 0 ? 'expense' : ''}`;
+  document.getElementById('val-income').textContent  = VELORA.fmt(income);
+  document.getElementById('val-expense').textContent = VELORA.fmt(expense);
+  document.getElementById('trend-income').innerHTML  = `<i class="fa fa-arrow-up"></i> ${filtered.filter(t=>t.type==='income').length} lançamento(s)`;
+  document.getElementById('trend-expense').innerHTML = `<i class="fa fa-arrow-down"></i> ${filtered.filter(t=>t.type==='expense').length} lançamento(s)`;
+
+  // Donut — use real category colors
+  const cats_db   = VELORA.db.getCategories();
+  const colorMap  = {};
+  cats_db.forEach(c => { colorMap[c.name] = c.color; });
+  const fallback  = ['#e50925','#a90019','#7a0012','#ff5368','#4a0000','#3b82f6','#a855f7'];
+
+  const catTotals = {};
+  filtered.filter(t => t.type === 'expense').forEach(t => {
+    catTotals[t.category] = (catTotals[t.category] || 0) + t.amount;
+  });
+
+  const cats   = Object.keys(catTotals).length ? Object.keys(catTotals) : cats_db.filter(c=>c.type==='expense').map(c=>c.name).slice(0,5);
+  const values = cats.map(c => catTotals[c] || 0);
+  const colors = cats.map((c, i) => colorMap[c] || fallback[i % fallback.length]);
+  const chartValues = values.every(v => v === 0) ? cats.map(() => 1) : values;
+
+  document.getElementById('donut-total').textContent  = VELORA.fmt(expense);
+  document.getElementById('donut-period').textContent = `${months[month]} ${year}`;
+
+  const ctx = document.getElementById('donutChart').getContext('2d');
+  if (donutChart) {
+    donutChart.data.labels = cats;
+    donutChart.data.datasets[0].data = chartValues;
+    donutChart.data.datasets[0].backgroundColor = colors;
+    donutChart.update();
+  } else {
+    donutChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels: cats, datasets: [{ data: chartValues, backgroundColor: colors, borderWidth: 0, hoverOffset: 6 }] },
+      options: {
+        cutout: '72%',
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: c => {
+            const total = c.dataset.data.reduce((a,b) => a+b, 0);
+            const pct = total ? ((c.parsed / total) * 100).toFixed(1) : 0;
+            return ` ${VELORA.fmt(values[c.dataIndex])} (${pct}%)`;
+          }}}
+        },
+        animation: { animateRotate: true, duration: 600 }
+      }
+    });
+  }
+
+  // Legend
+  const legendEl = document.getElementById('legend');
+  legendEl.innerHTML = '';
+  const total = values.reduce((a,b) => a+b, 0);
+  cats.forEach((c, i) => {
+    const pct = total ? ((values[i] / total) * 100).toFixed(0) : 0;
+    legendEl.innerHTML += `
+      <div class="legend-item">
+        <div class="legend-dot" style="background:${colors[i]}"></div>
+        <span class="legend-name">${c}</span>
+        <span class="legend-pct">${pct}%</span>
+        <span class="legend-val">${VELORA.fmt(values[i])}</span>
+      </div>`;
+  });
+
+  // Bills — from velora_bills_full for real data
+  const allBills = VELORA.db.getBills();
+  const today    = new Date(); today.setHours(0,0,0,0);
+  const billsEl  = document.getElementById('billsList');
+
+  const upcoming = allBills
+    .filter(b => b.status !== 'paid')
+    .sort((a,b) => a.due > b.due ? 1 : -1)
+    .slice(0, 5);
+
+  if (!upcoming.length) {
+    billsEl.innerHTML = '<div style="text-align:center;color:#444;padding:20px;font-size:13px">Nenhuma conta pendente.</div>';
+    return;
+  }
+
+  billsEl.innerHTML = upcoming.map(b => {
+    const due  = new Date(b.due + 'T00:00:00');
+    const diff = Math.ceil((due - today) / 86400000);
+    let cls = '', badgeCls = 'badge-ok', badgeText = 'Em dia', dateText = '';
+    if (diff < 0)       { cls = 'overdue';  badgeCls = 'badge-overdue';  badgeText = 'Vencida';  dateText = 'overdue-text'; }
+    else if (diff <= 5) { cls = 'upcoming'; badgeCls = 'badge-upcoming'; badgeText = `${diff}d`; dateText = 'upcoming-text'; }
+    return `
+      <div class="bill-item ${cls}">
+        <div class="bill-icon"><i class="fa fa-file-invoice"></i></div>
+        <div class="bill-info">
+          <div class="bill-name">${b.name}</div>
+          <div class="bill-date ${dateText}">Vence ${due.toLocaleDateString('pt-BR')}</div>
+        </div>
+        <div class="bill-value">${VELORA.fmt(b.amount)}</div>
+        <span class="bill-badge ${badgeCls}">${badgeText}</span>
+      </div>`;
+  }).join('');
+}
+
+function renderAll() {
+  const month = parseInt(selMonth.value);
+  const year  = parseInt(selYear.value);
+  render();
+  VeloraApple.render('apple-card', month, year);
+}
+
+renderAll();
+VeloraApple.maybeShowTutorial(renderAll);
+selMonth.addEventListener('change', renderAll);
+selYear.addEventListener('change', renderAll);
+window.addEventListener('velora:update', renderAll);
+window.addEventListener('storage', renderAll);
+</script>
+</body>
+</html>

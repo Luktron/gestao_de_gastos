@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VELORA — Categorias e configurações</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <link rel="stylesheet" href="../css/responsivo.css" />
+  <script src="../js/velora.js"></script>
+  <style>
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+
+    /* ── SEARCH / FILTER BAR ── */
+    .bar { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+    .bar input, .bar select {
+      background: #202020; border: 1px solid #333; color: #fff;
+      border-radius: 9px; padding: 9px 13px; font-size: 13px;
+      outline: none; transition: border-color .2s;
+    }
+    .bar input { flex: 1; min-width: 140px; }
+    .bar input::placeholder { color: #555; }
+    .bar input:focus, .bar select:focus { border-color: var(--red); }
+
+    /* ── CATEGORY TABLE ── */
+    .cat-table { width: 100%; border-collapse: collapse; }
+    .cat-table th {
+      text-align: left; font-size: 11px; font-weight: 600;
+      color: #555; text-transform: uppercase; letter-spacing: .5px;
+      padding: 0 10px 12px;
+    }
+    .cat-table td { padding: 10px; border-top: 1px solid #222; vertical-align: middle; }
+    .cat-table tr:hover td { background: #1e1e1e; }
+
+    .cat-icon-cell {
+      width: 36px; height: 36px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+    }
+
+    .cat-name { font-size: 13px; font-weight: 600; }
+    .cat-desc { font-size: 11px; color: #555; margin-top: 2px; }
+
+    .type-badge {
+      font-size: 11px; font-weight: 700; padding: 3px 10px;
+      border-radius: 20px; text-transform: uppercase; letter-spacing: .4px;
+    }
+    .type-expense { background: rgba(229,9,37,.15); color: #ff354f; }
+    .type-income  { background: rgba(34,197,94,.12); color: #4ade80; }
+
+    .action-btn {
+      background: none; border: 1px solid #2e2e2e; color: #666;
+      border-radius: 7px; width: 30px; height: 30px; cursor: pointer;
+      font-size: 12px; transition: all .2s;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .action-btn:hover { border-color: var(--red); color: var(--red); }
+    .action-btn.del:hover { border-color: #ff354f; color: #ff354f; }
+
+    /* ── PROFILE CARD ── */
+    .avatar-wrap {
+      display: flex; align-items: center; gap: 16px;
+      background: #202020; border: 1px solid #2a2a2a;
+      border-radius: 12px; padding: 16px; margin-bottom: 20px;
+    }
+    .avatar-big {
+      width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, #c0392b, #8b0000);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 800; color: #fff;
+    }
+    .avatar-info { flex: 1; }
+    .avatar-name { font-size: 16px; font-weight: 700; }
+    .avatar-email { font-size: 12px; color: #555; margin-top: 3px; }
+
+    /* ── SECTION BLOCKS ── */
+    .cfg-section { margin-bottom: 22px; }
+    .cfg-section-title {
+      font-size: 11px; font-weight: 700; color: #555;
+      text-transform: uppercase; letter-spacing: .6px;
+      margin-bottom: 12px; display: flex; align-items: center; gap: 7px;
+    }
+    .cfg-section-title::after {
+      content: ''; flex: 1; height: 1px; background: #222;
+    }
+
+    /* ── THEME BUTTONS ── */
+    .theme-row { display: flex; gap: 10px; }
+    .theme-btn {
+      flex: 1; padding: 10px; border-radius: 10px; cursor: pointer;
+      font-size: 13px; font-weight: 600; border: 2px solid #2e2e2e;
+      transition: all .2s; display: flex; align-items: center;
+      justify-content: center; gap: 8px;
+    }
+    .theme-btn.light { background: #f0f0f0; color: #111; border-color: #ccc; }
+    .theme-btn.dark  { background: #1a1a1a; color: #fff; border-color: #333; }
+    .theme-btn.active.dark  { border-color: var(--red); box-shadow: 0 0 0 2px rgba(229,9,37,.2); }
+    .theme-btn.active.light { border-color: #888; box-shadow: 0 0 0 2px rgba(255,255,255,.15); }
+
+    /* ── TOGGLE ── */
+    .toggle-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 11px 0; border-bottom: 1px solid #1e1e1e;
+    }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-label { font-size: 13px; color: #ccc; display: flex; align-items: center; gap: 9px; }
+    .toggle-label i { color: #555; width: 16px; text-align: center; }
+
+    .toggle {
+      position: relative; width: 40px; height: 22px; flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-track {
+      position: absolute; inset: 0; background: #333;
+      border-radius: 20px; cursor: pointer; transition: background .2s;
+    }
+    .toggle-track::before {
+      content: ''; position: absolute;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: #666; top: 3px; left: 3px; transition: all .2s;
+    }
+    .toggle input:checked + .toggle-track { background: var(--red); }
+    .toggle input:checked + .toggle-track::before { transform: translateX(18px); background: #fff; }
+
+    /* ── FORM FIELDS ── */
+    .cfg-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 13px; }
+    .cfg-field label { font-size: 11px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: .4px; }
+    .cfg-field input, .cfg-field select {
+      background: #202020; border: 1px solid #2e2e2e; color: #fff;
+      border-radius: 9px; padding: 10px 13px; font-size: 13px;
+      outline: none; transition: border-color .2s; font-family: inherit;
+    }
+    .cfg-field input::placeholder { color: #444; }
+    .cfg-field input:focus, .cfg-field select:focus { border-color: var(--red); }
+
+    .btn-outline-red {
+      background: transparent; border: 1px solid rgba(229,9,37,.4);
+      color: #ff354f; border-radius: 8px; padding: 9px 16px;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s;
+      display: inline-flex; align-items: center; gap: 7px; width: 100%;
+      justify-content: center; margin-top: 6px;
+    }
+    .btn-outline-red:hover { background: rgba(229,9,37,.1); border-color: var(--red); }
+
+    .btn-save-sm {
+      background: linear-gradient(90deg, #a90019, #ed102f);
+      border: none; color: #fff; border-radius: 8px;
+      padding: 10px 18px; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: all .2s; width: 100%;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+    }
+    .btn-save-sm:hover { box-shadow: 0 5px 15px rgba(229,9,37,.3); transform: translateY(-1px); }
+
+    /* ── ICON PICKER ── */
+    .icon-grid {
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px;
+      max-height: 180px; overflow-y: auto; padding: 4px;
+    }
+    .icon-opt {
+      width: 100%; aspect-ratio: 1; border-radius: 8px;
+      border: 2px solid #2e2e2e; background: #1e1e1e;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; cursor: pointer; transition: all .2s;
+    }
+    .icon-opt:hover, .icon-opt.selected { border-color: var(--red); background: rgba(229,9,37,.1); }
+
+    /* ── COLOR PICKER ── */
+    .color-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .color-dot {
+      width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+      border: 3px solid transparent; transition: all .2s;
+    }
+    .color-dot.selected { border-color: #fff; transform: scale(1.15); }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.8); z-index: 300;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: #181818; border: 1px solid #3a2028;
+      border-radius: 16px; padding: 28px; width: 100%; max-width: 460px;
+      max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 24px 80px rgba(0,0,0,.7);
+    }
+    .modal-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 22px;
+    }
+    .modal-head h3 { font-size: 17px; font-weight: 800; margin: 0; }
+    .modal-close-btn {
+      width: 30px; height: 30px; border-radius: 7px;
+      border: 1px solid #333; background: #222; color: #666;
+      cursor: pointer; font-size: 13px;
+      display: flex; align-items: center; justify-content: center; transition: all .2s;
+    }
+    .modal-close-btn:hover { border-color: var(--red); color: var(--red); }
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .field label { font-size: 11px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: .4px; }
+    .field input, .field select, .field textarea {
+      background: #222; border: 1px solid #333; color: #fff;
+      border-radius: 9px; padding: 10px 13px; font-size: 13px;
+      outline: none; transition: border-color .2s; font-family: inherit;
+    }
+    .field input::placeholder, .field textarea::placeholder { color: #555; }
+    .field input:focus, .field select:focus { border-color: var(--red); }
+    .field textarea { resize: vertical; min-height: 60px; }
+    .modal-foot { display: flex; gap: 10px; margin-top: 20px; }
+    .btn-save {
+      flex: 1; padding: 12px;
+      background: linear-gradient(90deg, #a90019, #ed102f);
+      color: #fff; border: none; border-radius: 9px;
+      font-size: 14px; font-weight: 700; cursor: pointer; transition: all .2s;
+    }
+    .btn-save:hover { box-shadow: 0 5px 18px rgba(229,9,37,.35); transform: translateY(-1px); }
+    .btn-cancel {
+      padding: 12px 18px; background: transparent;
+      border: 1px solid #333; color: #666;
+      border-radius: 9px; font-size: 14px; cursor: pointer; transition: all .2s;
+    }
+    .btn-cancel:hover { border-color: #555; color: #aaa; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 26px; right: 26px; z-index: 400;
+      background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px;
+      padding: 13px 18px; font-size: 13px; font-weight: 500;
+      display: flex; align-items: center; gap: 10px;
+      transform: translateY(80px); opacity: 0;
+      transition: all .3s ease; pointer-events: none;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { border-color: rgba(34,197,94,.3); color: #4ade80; }
+    .toast.error   { border-color: rgba(229,9,37,.3);  color: #ff354f; }
+    .toast.warn    { border-color: rgba(246,201,14,.3); color: #f6c90e; }
+
+    /* ── PANEL HEADER ── */
+    .panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 18px; flex-wrap: wrap; gap: 10px;
+    }
+    .panel-header h2 { margin: 0; font-size: 15px; font-weight: 700; }
+
+    @media (max-width: 1000px) { .two-col { grid-template-columns: 1fr; } }
+    @media (max-width: 600px)  { .icon-grid { grid-template-columns: repeat(5,1fr); } }
+  </style>
+</head>
+<body>
+
+<button class="hamburger" id="hamburger"><i class="fa fa-bars"></i></button>
+<div class="overlay" id="overlay"></div>
+
+<div class="dashboard">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">VEL<span>ORA</span></div>
+    <nav class="sidebar-menu">
+      <a href="dashboard.html"><i class="fa fa-chart-pie"></i> Visão geral</a>
+      <a href="transacoes.html"><i class="fa fa-arrow-right-arrow-left"></i> Transações</a>
+      <a href="contas.html"><i class="fa fa-credit-card"></i> Cartões e contas</a>
+      <a href="faturas.html"><i class="fa fa-file-invoice-dollar"></i> Faturas</a>
+      <a href="planejamento.html"><i class="fa fa-bullseye"></i> Orçamento e metas</a>
+      <a href="configuracoes.html" class="active"><i class="fa fa-sliders"></i> Categorias e config.</a>
+    </nav>
+    <div class="sidebar-footer">© 2025 VELORA</div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+
+    <div class="page-header">
+      <div>
+        <h1>Categorias e configurações</h1>
+        <p>Personalize sua experiência e gerencie suas categorias financeiras.</p>
+      </div>
+    </div>
+
+    <div class="two-col">
+
+      <!-- ══ CARD CATEGORIAS ══ -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2><i class="fa fa-tags" style="color:var(--red);margin-right:8px"></i>Categorias</h2>
+          <button class="btn-primary" id="btnNewCat"><i class="fa fa-plus"></i> Nova categoria</button>
+        </div>
+
+        <div class="bar">
+          <input type="text" id="catSearch" placeholder="Pesquisar categoria..." />
+          <select id="catFilter">
+            <option value="">Todos os tipos</option>
+            <option value="expense">Despesa</option>
+            <option value="income">Receita</option>
+          </select>
+        </div>
+
+        <table class="cat-table">
+          <thead>
+            <tr>
+              <th>Ícone</th>
+              <th>Nome</th>
+              <th>Tipo</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="catTableBody"></tbody>
+        </table>
+      </div>
+
+      <!-- ══ CARD PERFIL E PREFERÊNCIAS ══ -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2><i class="fa fa-user-circle" style="color:var(--red);margin-right:8px"></i>Perfil e preferências</h2>
+        </div>
+
+        <!-- AVATAR -->
+        <div class="avatar-wrap">
+          <div class="avatar-big" id="avatarInitial">HN</div>
+          <div class="avatar-info">
+            <div class="avatar-name" id="displayName">Hillary Nicoli</div>
+            <div class="avatar-email" id="displayEmail">hillary@velora.app</div>
+          </div>
+          <button class="action-btn" id="btnEditProfile" title="Editar perfil"><i class="fa fa-pen"></i></button>
+        </div>
+
+        <!-- TEMA -->
+        <div class="cfg-section">
+          <div class="cfg-section-title"><i class="fa fa-palette"></i> Tema</div>
+          <div class="theme-row">
+            <button class="theme-btn light" id="themeLight" onclick="setTheme('light')">
+              <i class="fa fa-sun"></i> Claro
+            </button>
+            <button class="theme-btn dark active" id="themeDark" onclick="setTheme('dark')">
+              <i class="fa fa-moon"></i> Escuro
+            </button>
+          </div>
+        </div>
+
+        <!-- NOTIFICAÇÕES -->
+        <div class="cfg-section">
+          <div class="cfg-section-title"><i class="fa fa-bell"></i> Notificações</div>
+          <div class="toggle-row">
+            <span class="toggle-label"><i class="fa fa-bell"></i> Ativar notificações</span>
+            <label class="toggle"><input type="checkbox" id="notifMaster" checked /><span class="toggle-track"></span></label>
+          </div>
+          <div id="notifSub">
+            <div class="toggle-row">
+              <span class="toggle-label"><i class="fa fa-calendar-xmark"></i> Contas próximas do vencimento</span>
+              <label class="toggle"><input type="checkbox" id="notifBills" checked /><span class="toggle-track"></span></label>
+            </div>
+            <div class="toggle-row">
+              <span class="toggle-label"><i class="fa fa-triangle-exclamation"></i> Orçamento ultrapassado</span>
+              <label class="toggle"><input type="checkbox" id="notifBudget" checked /><span class="toggle-track"></span></label>
+            </div>
+            <div class="toggle-row">
+              <span class="toggle-label"><i class="fa fa-arrow-right-arrow-left"></i> Movimentações</span>
+              <label class="toggle"><input type="checkbox" id="notifTx" /><span class="toggle-track"></span></label>
+            </div>
+            <div class="toggle-row">
+              <span class="toggle-label"><i class="fa fa-bullseye"></i> Lembretes de metas</span>
+              <label class="toggle"><input type="checkbox" id="notifGoals" checked /><span class="toggle-track"></span></label>
+            </div>
+          </div>
+        </div>
+
+        <!-- PREFERÊNCIAS -->
+        <div class="cfg-section">
+          <div class="cfg-section-title"><i class="fa fa-gear"></i> Preferências</div>
+          <div class="cfg-field">
+            <label>Moeda</label>
+            <select id="prefCurrency">
+              <option value="BRL">R$ — Real Brasileiro</option>
+              <option value="USD">$ — Dólar Americano</option>
+              <option value="EUR">€ — Euro</option>
+            </select>
+          </div>
+          <div class="cfg-field">
+            <label>Formato de data</label>
+            <select id="prefDate">
+              <option value="DD/MM/YYYY">DD/MM/AAAA</option>
+              <option value="MM/DD/YYYY">MM/DD/AAAA</option>
+              <option value="YYYY-MM-DD">AAAA-MM-DD</option>
+            </select>
+          </div>
+          <button class="btn-save-sm" id="btnSavePrefs"><i class="fa fa-check"></i> Salvar preferências</button>
+        </div>
+
+        <!-- ENCERRAR SESSÃO -->
+        <button class="btn-outline-red" id="btnLogout">
+          <i class="fa fa-right-from-bracket"></i> Encerrar sessão
+        </button>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ══ MODAL CATEGORIA ══ -->
+<div class="modal-overlay" id="catModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="catModalTitle">Nova categoria</h3>
+      <button class="modal-close-btn" id="catModalClose"><i class="fa fa-xmark"></i></button>
+    </div>
+
+    <div class="field">
+      <label>Nome</label>
+      <input type="text" id="cName" placeholder="Ex: Alimentação, Salário..." />
+    </div>
+    <div class="field">
+      <label>Tipo</label>
+      <select id="cType">
+        <option value="expense">Despesa</option>
+        <option value="income">Receita</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Descrição (opcional)</label>
+      <textarea id="cDesc" placeholder="Descreva esta categoria..."></textarea>
+    </div>
+    <div class="field">
+      <label>Ícone</label>
+      <div class="icon-grid" id="iconGrid"></div>
+    </div>
+    <div class="field">
+      <label>Cor</label>
+      <div class="color-row" id="colorRow"></div>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn-cancel" id="catCancel">Cancelar</button>
+      <button class="btn-save" id="catSave"><i class="fa fa-check"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL PERFIL ══ -->
+<div class="modal-overlay" id="profileModal">
+  <div class="modal-box" style="max-width:400px">
+    <div class="modal-head">
+      <h3>Editar perfil</h3>
+      <button class="modal-close-btn" id="profileModalClose"><i class="fa fa-xmark"></i></button>
+    </div>
+    <div class="field">
+      <label>Nome</label>
+      <input type="text" id="pName" placeholder="Seu nome completo" />
+    </div>
+    <div class="field">
+      <label>E-mail</label>
+      <input type="email" id="pEmail" placeholder="seu@email.com" />
+    </div>
+    <div class="field">
+      <label>Nova senha (deixe em branco para manter)</label>
+      <input type="password" id="pPass" placeholder="••••••••" />
+    </div>
+    <div class="field">
+      <label>Confirmar nova senha</label>
+      <input type="password" id="pPassConfirm" placeholder="••••••••" />
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" id="profileCancel">Cancelar</button>
+      <button class="btn-save" id="profileSave"><i class="fa fa-check"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── HELPERS ──
+function showToast(type, msg) { VELORA.showToast(type, msg); }
+const genId = () => VELORA.genId();
+
+// ── STORAGE ──
+function getCategories() { return VELORA.db.getCategories(); }
+function saveCategories(a) { VELORA.db.setCategories(a); }
+function getPrefs() { return VELORA.db.getPrefs(); }
+function savePrefs(p) { VELORA.db.setPrefs(p); }
+function getProfile() { return VELORA.db.getProfile(); }
+function saveProfile(p) { VELORA.db.setProfile(p); }
+
+// ── ICON & COLOR OPTIONS ──
+const ICONS = [
+  'fa-cart-shopping','fa-car','fa-gamepad','fa-file-invoice','fa-briefcase',
+  'fa-house','fa-utensils','fa-heart-pulse','fa-graduation-cap','fa-plane',
+  'fa-shirt','fa-paw','fa-dumbbell','fa-music','fa-book','fa-gift',
+  'fa-piggy-bank','fa-coins','fa-wallet','fa-chart-line','fa-store','fa-laptop',
+  'fa-mobile','fa-baby','fa-dog','fa-cat','fa-tree','fa-bolt',
+  'fa-droplet','fa-wifi','fa-tv','fa-scissors','fa-wrench','fa-star',
+];
+
+const COLORS = [
+  '#e50925','#ef4444','#f97316','#f59e0b','#eab308',
+  '#22c55e','#10b981','#14b8a6','#3b82f6','#6366f1',
+  '#8b5cf6','#a855f7','#ec4899','#f43f5e','#64748b',
+];
+
+let selectedIcon  = ICONS[0];
+let selectedColor = COLORS[0];
+
+function buildIconGrid() {
+  const grid = document.getElementById('iconGrid');
+  grid.innerHTML = ICONS.map(ic => `
+    <div class="icon-opt${ic===selectedIcon?' selected':''}" data-icon="${ic}" onclick="pickIcon('${ic}')">
+      <i class="fa ${ic}"></i>
+    </div>`).join('');
+}
+
+function buildColorRow() {
+  const row = document.getElementById('colorRow');
+  row.innerHTML = COLORS.map(c => `
+    <div class="color-dot${c===selectedColor?' selected':''}" data-color="${c}"
+      style="background:${c}" onclick="pickColor('${c}')"></div>`).join('');
+}
+
+function pickIcon(ic) {
+  selectedIcon = ic;
+  document.querySelectorAll('.icon-opt').forEach(el => el.classList.toggle('selected', el.dataset.icon === ic));
+}
+
+function pickColor(c) {
+  selectedColor = c;
+  document.querySelectorAll('.color-dot').forEach(el => el.classList.toggle('selected', el.dataset.color === c));
+}
+
+// ── RENDER TABLE ──
+function renderCategories() {
+  const search = document.getElementById('catSearch').value.toLowerCase();
+  const filter = document.getElementById('catFilter').value;
+  const cats   = getCategories().filter(c => {
+    const matchName = c.name.toLowerCase().includes(search);
+    const matchType = !filter || c.type === filter;
+    return matchName && matchType;
+  });
+
+  const tbody = document.getElementById('catTableBody');
+  if (!cats.length) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#444;padding:30px;font-size:13px"><i class="fa fa-tags" style="display:block;font-size:28px;margin-bottom:8px"></i>Nenhuma categoria encontrada.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = cats.map(c => `
+    <tr>
+      <td>
+        <div class="cat-icon-cell" style="background:${c.color}22;color:${c.color}">
+          <i class="fa ${c.icon}"></i>
+        </div>
+      </td>
+      <td>
+        <div class="cat-name">${c.name}</div>
+        ${c.desc ? `<div class="cat-desc">${c.desc}</div>` : ''}
+      </td>
+      <td><span class="type-badge ${c.type==='expense'?'type-expense':'type-income'}">${c.type==='expense'?'Despesa':'Receita'}</span></td>
+      <td style="white-space:nowrap">
+        <button class="action-btn" onclick="openEditCat(${c.id})" title="Editar"><i class="fa fa-pen"></i></button>
+        ${!c.locked ? `<button class="action-btn del" onclick="deleteCat(${c.id})" title="Excluir" style="margin-left:4px"><i class="fa fa-trash"></i></button>` : ''}
+      </td>
+    </tr>`).join('');
+}
+
+document.getElementById('catSearch').addEventListener('input', renderCategories);
+document.getElementById('catFilter').addEventListener('change', renderCategories);
+
+// ── CATEGORY MODAL ──
+let editCatId = null;
+
+function openCatModal() {
+  buildIconGrid();
+  buildColorRow();
+  document.getElementById('catModal').classList.add('open');
+}
+function closeCatModal() {
+  document.getElementById('catModal').classList.remove('open');
+  editCatId = null;
+}
+
+document.getElementById('btnNewCat').addEventListener('click', () => {
+  editCatId = null;
+  selectedIcon  = ICONS[0];
+  selectedColor = COLORS[0];
+  document.getElementById('catModalTitle').textContent = 'Nova categoria';
+  document.getElementById('cName').value  = '';
+  document.getElementById('cType').value  = 'expense';
+  document.getElementById('cDesc').value  = '';
+  openCatModal();
+});
+
+document.getElementById('catModalClose').addEventListener('click', closeCatModal);
+document.getElementById('catCancel').addEventListener('click', closeCatModal);
+document.getElementById('catModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeCatModal(); });
+
+document.getElementById('catSave').addEventListener('click', () => {
+  const name = document.getElementById('cName').value.trim();
+  if (!name) { showToast('error', 'Informe o nome da categoria.'); return; }
+
+  const cat = {
+    id:     editCatId || genId(),
+    name,
+    type:   document.getElementById('cType').value,
+    desc:   document.getElementById('cDesc').value.trim(),
+    icon:   selectedIcon,
+    color:  selectedColor,
+    locked: false,
+  };
+
+  let arr = getCategories();
+  if (editCatId) {
+    arr = arr.map(c => c.id === editCatId ? { ...c, ...cat, locked: c.locked } : c);
+    showToast('success', 'Categoria atualizada!');
+  } else {
+    arr.push(cat);
+    showToast('success', 'Categoria criada!');
+  }
+  saveCategories(arr);
+  closeCatModal();
+  renderCategories();
+});
+
+function openEditCat(id) {
+  const c = getCategories().find(x => x.id === id); if (!c) return;
+  editCatId     = id;
+  selectedIcon  = c.icon;
+  selectedColor = c.color;
+  document.getElementById('catModalTitle').textContent = 'Editar categoria';
+  document.getElementById('cName').value  = c.name;
+  document.getElementById('cType').value  = c.type;
+  document.getElementById('cDesc').value  = c.desc || '';
+  openCatModal();
+}
+
+function deleteCat(id) {
+  if (!confirm('Excluir esta categoria?')) return;
+  saveCategories(getCategories().filter(c => c.id !== id));
+  showToast('success', 'Categoria excluída.');
+  renderCategories();
+}
+
+// ── PROFILE ──
+function loadProfile() {
+  const p = getProfile();
+  document.getElementById('displayName').textContent  = p.name  || 'Hillary Nicoli';
+  document.getElementById('displayEmail').textContent = p.email || 'hillary@velora.app';
+  const initials = (p.name || 'HN').split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+  document.getElementById('avatarInitial').textContent = initials;
+}
+
+document.getElementById('btnEditProfile').addEventListener('click', () => {
+  const p = getProfile();
+  document.getElementById('pName').value  = p.name  || '';
+  document.getElementById('pEmail').value = p.email || '';
+  document.getElementById('pPass').value  = '';
+  document.getElementById('pPassConfirm').value = '';
+  document.getElementById('profileModal').classList.add('open');
+});
+
+document.getElementById('profileModalClose').addEventListener('click', () => document.getElementById('profileModal').classList.remove('open'));
+document.getElementById('profileCancel').addEventListener('click',     () => document.getElementById('profileModal').classList.remove('open'));
+document.getElementById('profileModal').addEventListener('click', e => { if (e.target === e.currentTarget) document.getElementById('profileModal').classList.remove('open'); });
+
+document.getElementById('profileSave').addEventListener('click', () => {
+  const name  = document.getElementById('pName').value.trim();
+  const email = document.getElementById('pEmail').value.trim();
+  const pass  = document.getElementById('pPass').value;
+  const conf  = document.getElementById('pPassConfirm').value;
+  if (!name || !email) { showToast('error', 'Nome e e-mail são obrigatórios.'); return; }
+  if (pass && pass !== conf) { showToast('error', 'As senhas não coincidem.'); return; }
+  const p = getProfile();
+  saveProfile({ ...p, name, email });
+  loadProfile();
+  document.getElementById('profileModal').classList.remove('open');
+  showToast('success', 'Perfil atualizado!');
+});
+
+// ── THEME ──
+function setTheme(t) {
+  document.getElementById('themeLight').classList.toggle('active', t === 'light');
+  document.getElementById('themeDark').classList.toggle('active',  t === 'dark');
+  const prefs = getPrefs();
+  savePrefs({ ...prefs, theme: t });
+  showToast('success', `Tema ${t === 'dark' ? 'escuro' : 'claro'} ativado!`);
+}
+
+function loadTheme() {
+  const t = getPrefs().theme || 'dark';
+  document.getElementById('themeLight').classList.toggle('active', t === 'light');
+  document.getElementById('themeDark').classList.toggle('active',  t === 'dark');
+}
+
+// ── NOTIFICATIONS ──
+const notifIds = ['notifBills','notifBudget','notifTx','notifGoals'];
+
+function loadNotifs() {
+  const prefs = getPrefs();
+  const master = prefs.notifMaster !== false;
+  document.getElementById('notifMaster').checked = master;
+  document.getElementById('notifSub').style.opacity = master ? '1' : '.4';
+  document.getElementById('notifSub').style.pointerEvents = master ? '' : 'none';
+  notifIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.checked = prefs[id] !== false;
+  });
+}
+
+document.getElementById('notifMaster').addEventListener('change', function() {
+  const prefs = getPrefs();
+  savePrefs({ ...prefs, notifMaster: this.checked });
+  document.getElementById('notifSub').style.opacity = this.checked ? '1' : '.4';
+  document.getElementById('notifSub').style.pointerEvents = this.checked ? '' : 'none';
+  showToast('success', `Notificações ${this.checked ? 'ativadas' : 'desativadas'}.`);
+});
+
+notifIds.forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('change', function() {
+    const prefs = getPrefs();
+    savePrefs({ ...prefs, [id]: this.checked });
+    showToast('success', 'Preferência salva.');
+  });
+});
+
+// ── PREFERENCES ──
+function loadPrefsUI() {
+  const p = getPrefs();
+  if (p.currency) document.getElementById('prefCurrency').value = p.currency;
+  if (p.dateFormat) document.getElementById('prefDate').value = p.dateFormat;
+}
+
+document.getElementById('btnSavePrefs').addEventListener('click', () => {
+  const prefs = getPrefs();
+  savePrefs({
+    ...prefs,
+    currency:   document.getElementById('prefCurrency').value,
+    dateFormat: document.getElementById('prefDate').value,
+  });
+  showToast('success', 'Preferências salvas!');
+});
+
+// ── LOGOUT ──
+document.getElementById('btnLogout').addEventListener('click', () => {
+  if (!confirm('Deseja encerrar a sessão?')) return;
+  VELORA.logout();
+});
+
+// ── INIT ──
+loadProfile();
+loadTheme();
+loadNotifs();
+loadPrefsUI();
+renderCategories();
+window.addEventListener('velora:update', renderCategories);
+</script>
+</body>
+</html>

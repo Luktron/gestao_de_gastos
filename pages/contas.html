@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VELORA — Cartões e contas</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <link rel="stylesheet" href="../css/responsivo.css" />
+  <script src="../js/velora.js"></script>
+  <style>
+    .accounts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; margin-bottom: 28px; }
+
+    .account-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 22px; position: relative;
+      transition: all .2s; overflow: hidden;
+    }
+    .account-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 3px; background: var(--accent, var(--red));
+    }
+    .account-card:hover { border-color: #444; transform: translateY(-2px); }
+
+    .account-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+    .account-icon {
+      width: 42px; height: 42px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .account-actions { display: flex; gap: 6px; }
+    .account-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .account-type { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: .5px; }
+    .account-balance { font-size: 26px; font-weight: 800; margin: 12px 0 4px; }
+    .account-balance.positive { color: #4ade80; }
+    .account-balance.negative { color: #ff354f; }
+    .account-sub { font-size: 12px; color: #555; }
+
+    /* CREDIT CARD VISUAL */
+    .credit-card-visual {
+      background: linear-gradient(135deg, #1a0a0a 0%, #3d0a0a 50%, #1a0a0a 100%);
+      border-radius: 16px; padding: 22px; position: relative;
+      overflow: hidden; min-height: 160px;
+      border: 1px solid rgba(229,9,37,.2);
+    }
+    .credit-card-visual::after {
+      content: ''; position: absolute;
+      width: 200px; height: 200px; border-radius: 50%;
+      background: rgba(229,9,37,.08);
+      top: -60px; right: -60px;
+    }
+    .card-chip {
+      width: 36px; height: 28px; border-radius: 5px;
+      background: linear-gradient(135deg, #d4a017, #f0c040);
+      margin-bottom: 20px;
+    }
+    .card-number { font-size: 15px; letter-spacing: 3px; color: #ccc; margin-bottom: 16px; font-family: monospace; }
+    .card-bottom { display: flex; justify-content: space-between; align-items: flex-end; }
+    .card-holder { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+    .card-holder strong { display: block; font-size: 14px; color: #fff; margin-top: 2px; }
+    .card-expiry { text-align: right; font-size: 11px; color: #888; }
+    .card-expiry strong { display: block; font-size: 14px; color: #fff; }
+    .card-brand { position: absolute; top: 18px; right: 18px; font-size: 22px; color: rgba(255,255,255,.3); }
+
+    /* STATS ROW */
+    .stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 24px; }
+    .stat-card {
+      background: #202020; border: 1px solid #2a2a2a;
+      border-radius: 12px; padding: 16px;
+    }
+    .stat-label { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+    .stat-value { font-size: 22px; font-weight: 800; }
+    .stat-value.green  { color: #4ade80; }
+    .stat-value.red    { color: #ff354f; }
+    .stat-value.yellow { color: #f6c90e; }
+
+    /* TRANSACTIONS MINI */
+    .mini-tx { display: flex; flex-direction: column; gap: 8px; }
+    .mini-tx-item {
+      display: flex; align-items: center; gap: 12px;
+      background: #202020; border: 1px solid #2a2a2a;
+      border-radius: 10px; padding: 11px 14px;
+    }
+    .mini-tx-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; flex-shrink: 0;
+    }
+    .mini-tx-desc { flex: 1; }
+    .mini-tx-name { font-size: 13px; font-weight: 600; }
+    .mini-tx-date { font-size: 11px; color: #555; margin-top: 1px; }
+    .mini-tx-val  { font-size: 13px; font-weight: 700; white-space: nowrap; }
+    .mini-tx-val.pos { color: #4ade80; }
+    .mini-tx-val.neg { color: #ff354f; }
+
+    /* MODAL */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.8); z-index: 300;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: #181818; border: 1px solid #3a2028;
+      border-radius: 16px; padding: 28px; width: 100%; max-width: 460px;
+      max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 24px 80px rgba(0,0,0,.7);
+    }
+    .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+    .modal-head h3 { font-size: 17px; font-weight: 800; margin: 0; }
+    .modal-close-btn {
+      width: 30px; height: 30px; border-radius: 7px;
+      border: 1px solid #333; background: #222; color: #666;
+      cursor: pointer; font-size: 13px;
+      display: flex; align-items: center; justify-content: center; transition: all .2s;
+    }
+    .modal-close-btn:hover { border-color: var(--red); color: var(--red); }
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .field label { font-size: 11px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: .4px; }
+    .field input, .field select {
+      background: #222; border: 1px solid #333; color: #fff;
+      border-radius: 9px; padding: 10px 13px; font-size: 13px;
+      outline: none; transition: border-color .2s; font-family: inherit;
+    }
+    .field input::placeholder { color: #555; }
+    .field input:focus, .field select:focus { border-color: var(--red); }
+    .modal-foot { display: flex; gap: 10px; margin-top: 20px; }
+    .btn-save {
+      flex: 1; padding: 12px;
+      background: linear-gradient(90deg, #a90019, #ed102f);
+      color: #fff; border: none; border-radius: 9px;
+      font-size: 14px; font-weight: 700; cursor: pointer; transition: all .2s;
+    }
+    .btn-save:hover { box-shadow: 0 5px 18px rgba(229,9,37,.35); transform: translateY(-1px); }
+    .btn-cancel {
+      padding: 12px 18px; background: transparent;
+      border: 1px solid #333; color: #666;
+      border-radius: 9px; font-size: 14px; cursor: pointer; transition: all .2s;
+    }
+    .btn-cancel:hover { border-color: #555; color: #aaa; }
+
+    /* COLOR PICKER */
+    .color-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .color-dot {
+      width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+      border: 3px solid transparent; transition: all .2s;
+    }
+    .color-dot.selected { border-color: #fff; transform: scale(1.15); }
+
+    .two-col-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 10px; }
+    .panel-header h2 { margin: 0; font-size: 15px; font-weight: 700; }
+
+    @media (max-width: 900px) { .stats-row { grid-template-columns: 1fr 1fr; } .two-col-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 500px) { .stats-row { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<button class="hamburger" id="hamburger"><i class="fa fa-bars"></i></button>
+<div class="overlay" id="overlay"></div>
+
+<div class="dashboard">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">VEL<span>ORA</span></div>
+    <nav class="sidebar-menu">
+      <a href="dashboard.html"><i class="fa fa-chart-pie"></i> Visão geral</a>
+      <a href="transacoes.html"><i class="fa fa-arrow-right-arrow-left"></i> Transações</a>
+      <a href="contas.html" class="active"><i class="fa fa-credit-card"></i> Cartões e contas</a>
+      <a href="faturas.html"><i class="fa fa-file-invoice-dollar"></i> Faturas</a>
+      <a href="planejamento.html"><i class="fa fa-bullseye"></i> Orçamento e metas</a>
+      <a href="configuracoes.html"><i class="fa fa-sliders"></i> Categorias e config.</a>
+    </nav>
+    <div class="sidebar-footer">© 2025 VELORA</div>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header">
+      <div>
+        <h1>Cartões e contas</h1>
+        <p>Gerencie seus cartões e contas bancárias.</p>
+      </div>
+      <div class="header-right">
+        <button class="btn-primary" id="btnNewAccount"><i class="fa fa-plus"></i> Nova conta</button>
+        <div class="user-chip">
+          <div class="user-avatar" id="userAvatar">H</div>
+          <span class="user-name" id="userName">Hillary</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Saldo total</div>
+        <div class="stat-value green" id="statTotal">R$ 0,00</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Limite disponível</div>
+        <div class="stat-value yellow" id="statLimit">R$ 0,00</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Contas cadastradas</div>
+        <div class="stat-value" id="statCount">0</div>
+      </div>
+    </div>
+
+    <!-- ACCOUNTS GRID -->
+    <div class="panel" style="margin-bottom:20px">
+      <div class="panel-header">
+        <h2><i class="fa fa-building-columns" style="color:var(--red);margin-right:8px"></i>Minhas contas</h2>
+      </div>
+      <div class="accounts-grid" id="accountsGrid"></div>
+    </div>
+
+    <!-- BOTTOM GRID -->
+    <div class="two-col-grid">
+      <!-- RECENT TRANSACTIONS -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2><i class="fa fa-clock-rotate-left" style="color:var(--red);margin-right:8px"></i>Últimas movimentações</h2>
+          <a href="transacoes.html" style="font-size:12px;color:#555;text-decoration:none">Ver todas →</a>
+        </div>
+        <div class="mini-tx" id="recentTx"></div>
+      </div>
+
+      <!-- SPENDING BY ACCOUNT -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2><i class="fa fa-chart-bar" style="color:var(--red);margin-right:8px"></i>Gastos por conta</h2>
+        </div>
+        <div id="spendingByAccount"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL ACCOUNT -->
+<div class="modal-overlay" id="accountModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="accountModalTitle">Nova conta</h3>
+      <button class="modal-close-btn" id="accountModalClose"><i class="fa fa-xmark"></i></button>
+    </div>
+    <div class="field">
+      <label>Nome da conta</label>
+      <input type="text" id="aName" placeholder="Ex: Nubank, Bradesco, Carteira..." />
+    </div>
+    <div class="field">
+      <label>Tipo</label>
+      <select id="aType">
+        <option value="checking">Conta corrente</option>
+        <option value="savings">Poupança</option>
+        <option value="credit">Cartão de crédito</option>
+        <option value="cash">Dinheiro</option>
+        <option value="investment">Investimento</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Saldo inicial (R$)</label>
+      <input type="number" id="aBalance" placeholder="0,00" step="0.01" />
+    </div>
+    <div class="field" id="limitField">
+      <label>Limite do cartão (R$)</label>
+      <input type="number" id="aLimit" placeholder="0,00" step="0.01" />
+    </div>
+    <div class="field">
+      <label>Cor</label>
+      <div class="color-row" id="accountColorRow"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" id="accountCancel">Cancelar</button>
+      <button class="btn-save" id="accountSave"><i class="fa fa-check"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const fmt     = v => VELORA.fmt(v);
+const fmtDate = s => VELORA.fmtDate(s);
+const genId   = () => VELORA.genId();
+
+const ACCOUNT_COLORS = ['#e50925','#3b82f6','#22c55e','#a855f7','#f59e0b','#14b8a6','#f43f5e','#64748b'];
+const ACCOUNT_ICONS  = { checking:'fa-building-columns', savings:'fa-piggy-bank', credit:'fa-credit-card', cash:'fa-wallet', investment:'fa-chart-line' };
+const ACCOUNT_LABELS = { checking:'Conta corrente', savings:'Poupança', credit:'Cartão de crédito', cash:'Dinheiro', investment:'Investimento' };
+
+let selectedColor = ACCOUNT_COLORS[0];
+
+// Storage
+function getAccounts()     { return JSON.parse(localStorage.getItem('velora_accounts') || '[]'); }
+function saveAccounts(arr) { localStorage.setItem('velora_accounts', JSON.stringify(arr)); VELORA.broadcast(); }
+
+// Seed
+(function seed() {
+  if (getAccounts().length) return;
+  saveAccounts([
+    { id:1, name:'Nubank',       type:'checking', balance:3240.50, limit:0,    color:'#a855f7' },
+    { id:2, name:'Bradesco',     type:'savings',  balance:8500,    limit:0,    color:'#e50925' },
+    { id:3, name:'Cartão Visa',  type:'credit',   balance:-1250,   limit:5000, color:'#3b82f6' },
+    { id:4, name:'Carteira',     type:'cash',     balance:320,     limit:0,    color:'#22c55e' },
+  ]);
+})();
+
+function buildColorRow() {
+  const row = document.getElementById('accountColorRow');
+  row.innerHTML = ACCOUNT_COLORS.map(c => `
+    <div class="color-dot${c===selectedColor?' selected':''}" data-color="${c}"
+      style="background:${c}" onclick="pickColor('${c}')"></div>`).join('');
+}
+
+function pickColor(c) {
+  selectedColor = c;
+  document.querySelectorAll('#accountColorRow .color-dot').forEach(el =>
+    el.classList.toggle('selected', el.dataset.color === c));
+}
+
+function render() {
+  const accounts = getAccounts();
+  const txs      = VELORA.db.getTransactions();
+
+  // Stats
+  const totalBalance = accounts.reduce((s,a) => s + (a.balance || 0), 0);
+  const totalLimit   = accounts.filter(a => a.type === 'credit').reduce((s,a) => s + (a.limit || 0), 0);
+  const usedCredit   = accounts.filter(a => a.type === 'credit').reduce((s,a) => s + Math.abs(Math.min(0, a.balance || 0)), 0);
+  document.getElementById('statTotal').textContent = fmt(totalBalance);
+  document.getElementById('statLimit').textContent = fmt(Math.max(0, totalLimit - usedCredit));
+  document.getElementById('statCount').textContent = accounts.length;
+
+  // Accounts grid
+  const grid = document.getElementById('accountsGrid');
+  if (!accounts.length) {
+    grid.innerHTML = '<div style="color:#444;font-size:13px;padding:20px;text-align:center;grid-column:1/-1"><i class="fa fa-building-columns" style="font-size:32px;display:block;margin-bottom:10px"></i>Nenhuma conta cadastrada.</div>';
+  } else {
+    grid.innerHTML = accounts.map(a => {
+      const isCredit = a.type === 'credit';
+      const bal      = a.balance || 0;
+      const balClass = bal >= 0 ? 'positive' : 'negative';
+      return `
+        <div class="account-card" style="--accent:${a.color}">
+          <div class="account-top">
+            <div>
+              <div class="account-icon" style="background:${a.color}22;color:${a.color}">
+                <i class="fa ${ACCOUNT_ICONS[a.type] || 'fa-wallet'}"></i>
+              </div>
+            </div>
+            <div class="account-actions">
+              <button class="action-btn" onclick="openEditAccount(${a.id})" title="Editar"><i class="fa fa-pen"></i></button>
+              <button class="action-btn del" onclick="deleteAccount(${a.id})" title="Excluir"><i class="fa fa-trash"></i></button>
+            </div>
+          </div>
+          <div class="account-name">${a.name}</div>
+          <div class="account-type">${ACCOUNT_LABELS[a.type] || a.type}</div>
+          <div class="account-balance ${balClass}">${fmt(bal)}</div>
+          ${isCredit ? `<div class="account-sub">Limite: ${fmt(a.limit || 0)} · Disponível: ${fmt(Math.max(0,(a.limit||0)+bal))}</div>` : '<div class="account-sub">Saldo disponível</div>'}
+        </div>`;
+    }).join('');
+  }
+
+  // Recent transactions
+  const recent = [...txs].sort((a,b) => b.date > a.date ? 1 : -1).slice(0, 6);
+  const recentEl = document.getElementById('recentTx');
+  if (!recent.length) {
+    recentEl.innerHTML = '<div style="color:#444;font-size:13px;padding:20px;text-align:center">Nenhuma movimentação.</div>';
+  } else {
+    recentEl.innerHTML = recent.map(t => {
+      const cats = VELORA.db.getCategories();
+      const cat  = cats.find(c => c.name === t.category);
+      const color = cat ? cat.color : '#555';
+      const icon  = cat ? cat.icon  : 'fa-circle';
+      return `
+        <div class="mini-tx-item">
+          <div class="mini-tx-icon" style="background:${color}22;color:${color}"><i class="fa ${icon}"></i></div>
+          <div class="mini-tx-desc">
+            <div class="mini-tx-name">${t.description}</div>
+            <div class="mini-tx-date">${fmtDate(t.date)} · ${t.account || '—'}</div>
+          </div>
+          <div class="mini-tx-val ${t.type==='income'?'pos':'neg'}">
+            ${t.type==='income'?'+':'-'}${fmt(t.amount)}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // Spending by account
+  const spendMap = {};
+  txs.filter(t => t.type === 'expense').forEach(t => {
+    const acc = t.account || 'Outros';
+    spendMap[acc] = (spendMap[acc] || 0) + t.amount;
+  });
+  const spendTotal = Object.values(spendMap).reduce((s,v) => s+v, 0);
+  const spendEl = document.getElementById('spendingByAccount');
+  if (!spendTotal) {
+    spendEl.innerHTML = '<div style="color:#444;font-size:13px;padding:20px;text-align:center">Nenhum gasto registrado.</div>';
+  } else {
+    spendEl.innerHTML = Object.entries(spendMap)
+      .sort((a,b) => b[1]-a[1])
+      .map(([name, val]) => {
+        const pct = Math.round((val / spendTotal) * 100);
+        const acc = accounts.find(a => a.name === name);
+        const color = acc ? acc.color : '#555';
+        return `
+          <div style="margin-bottom:14px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+              <span style="color:#ccc">${name}</span>
+              <span style="font-weight:700">${fmt(val)} <span style="color:#555;font-weight:400">(${pct}%)</span></span>
+            </div>
+            <div class="progress">
+              <div class="progress-bar" style="width:${pct}%;background:${color}"></div>
+            </div>
+          </div>`;
+      }).join('');
+  }
+}
+
+// Modal
+let editAccountId = null;
+
+function openAccountModal() {
+  buildColorRow();
+  document.getElementById('aType').dispatchEvent(new Event('change'));
+  document.getElementById('accountModal').classList.add('open');
+}
+function closeAccountModal() {
+  document.getElementById('accountModal').classList.remove('open');
+  editAccountId = null;
+}
+
+document.getElementById('aType').addEventListener('change', function() {
+  document.getElementById('limitField').style.display = this.value === 'credit' ? 'flex' : 'none';
+});
+
+document.getElementById('btnNewAccount').addEventListener('click', () => {
+  editAccountId = null;
+  selectedColor = ACCOUNT_COLORS[0];
+  document.getElementById('accountModalTitle').textContent = 'Nova conta';
+  document.getElementById('aName').value    = '';
+  document.getElementById('aType').value    = 'checking';
+  document.getElementById('aBalance').value = '';
+  document.getElementById('aLimit').value   = '';
+  openAccountModal();
+});
+
+document.getElementById('accountModalClose').addEventListener('click', closeAccountModal);
+document.getElementById('accountCancel').addEventListener('click', closeAccountModal);
+document.getElementById('accountModal').addEventListener('click', e => { if(e.target===e.currentTarget) closeAccountModal(); });
+
+document.getElementById('accountSave').addEventListener('click', () => {
+  const name    = document.getElementById('aName').value.trim();
+  const balance = parseFloat(document.getElementById('aBalance').value) || 0;
+  if (!name) { VELORA.showToast('error', 'Informe o nome da conta.'); return; }
+
+  const acc = {
+    id:      editAccountId || genId(),
+    name,
+    type:    document.getElementById('aType').value,
+    balance,
+    limit:   parseFloat(document.getElementById('aLimit').value) || 0,
+    color:   selectedColor,
+  };
+
+  let arr = getAccounts();
+  if (editAccountId) {
+    arr = arr.map(a => a.id === editAccountId ? acc : a);
+    VELORA.showToast('success', 'Conta atualizada!');
+  } else {
+    arr.push(acc);
+    VELORA.showToast('success', 'Conta criada!');
+  }
+  saveAccounts(arr);
+  closeAccountModal();
+  render();
+});
+
+function openEditAccount(id) {
+  const a = getAccounts().find(x => x.id === id); if (!a) return;
+  editAccountId = id;
+  selectedColor = a.color;
+  document.getElementById('accountModalTitle').textContent = 'Editar conta';
+  document.getElementById('aName').value    = a.name;
+  document.getElementById('aType').value    = a.type;
+  document.getElementById('aBalance').value = a.balance;
+  document.getElementById('aLimit').value   = a.limit || '';
+  openAccountModal();
+}
+
+function deleteAccount(id) {
+  if (!confirm('Excluir esta conta?')) return;
+  saveAccounts(getAccounts().filter(a => a.id !== id));
+  VELORA.showToast('success', 'Conta excluída.');
+  render();
+}
+
+render();
+window.addEventListener('velora:update', render);
+window.addEventListener('storage', render);
+</script>
+</body>
+</html>
