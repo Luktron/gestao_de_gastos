@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VELORA — Entrar</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../css/cadastro.css" />
+  <link rel="stylesheet" href="../css/responsivo.css" />
+</head>
+<body class="auth-page">
+
+  <div class="auth-container">
+
+    <div class="auth-logo">
+      <span class="auth-logo-icon">V</span>
+      VEL<span>ORA</span>
+    </div>
+
+    <h1 class="auth-title">Bem-vindo de volta</h1>
+    <p class="auth-subtitle">Entre na sua conta VELORA.</p>
+
+    <form class="auth-form" id="loginForm" novalidate>
+
+      <!-- E-mail -->
+      <div class="auth-group">
+        <label for="email">E-mail</label>
+        <input type="email" id="email" placeholder="seu@email.com" autocomplete="email" />
+        <span class="auth-error" id="err-email"><i class="fa fa-circle-exclamation"></i> <span></span></span>
+      </div>
+
+      <!-- Senha -->
+      <div class="auth-group">
+        <label for="password">Senha</label>
+        <div class="password-wrapper">
+          <input type="password" id="password" placeholder="Sua senha" autocomplete="current-password" />
+          <button type="button" class="password-toggle" data-target="password" aria-label="Mostrar senha">
+            <i class="fa fa-eye"></i>
+          </button>
+        </div>
+        <span class="auth-error" id="err-password"><i class="fa fa-circle-exclamation"></i> <span></span></span>
+      </div>
+
+      <div class="auth-forgot"><a href="#">Esqueci minha senha</a></div>
+
+      <!-- Toast -->
+      <div class="auth-toast" id="toast"></div>
+
+      <!-- Submit -->
+      <button type="submit" class="auth-button" id="submitBtn">
+        <div class="auth-spinner" id="spinner"></div>
+        <span id="btnText"><i class="fa fa-right-to-bracket"></i> Entrar</span>
+      </button>
+
+    </form>
+
+    <div class="auth-divider"></div>
+
+    <div class="auth-footer">
+      Não tem uma conta? <a href="cadastro.html">Criar conta</a>
+    </div>
+
+  </div>
+
+  <script>
+    // Redirect if already logged in
+    if (JSON.parse(localStorage.getItem('velora_session') || 'null')) {
+      window.location.href = 'dashboard.html';
+    }
+
+    // Seed demo user if no users exist
+    (function seedDemo() {
+      const users = JSON.parse(localStorage.getItem('velora_users') || '[]');
+      if (!users.length) {
+        crypto.subtle.digest('SHA-256', new TextEncoder().encode('velora123'))
+          .then(buf => {
+            const hash = Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+            users.push({ id:'demo', name:'Hillary Nicoli', email:'hillary@velora.app', password: hash, createdAt: new Date().toISOString() });
+            localStorage.setItem('velora_users', JSON.stringify(users));
+          });
+      }
+    })();
+
+    // Toggle senha
+    document.querySelectorAll('.password-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const input = document.getElementById(btn.dataset.target);
+        const isText = input.type === 'text';
+        input.type = isText ? 'password' : 'text';
+        btn.querySelector('i').className = isText ? 'fa fa-eye' : 'fa fa-eye-slash';
+      });
+    });
+
+    // Hash SHA-256
+    async function hashPassword(pw) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+    }
+
+    function setError(fieldId, msg) {
+      const input = document.getElementById(fieldId);
+      const err   = document.getElementById('err-' + fieldId);
+      input.classList.add('error'); input.classList.remove('success');
+      err.querySelector('span').textContent = msg;
+      err.classList.add('show');
+      return false;
+    }
+
+    function setOk(fieldId) {
+      const input = document.getElementById(fieldId);
+      const err   = document.getElementById('err-' + fieldId);
+      input.classList.remove('error'); input.classList.add('success');
+      err.classList.remove('show');
+      return true;
+    }
+
+    function showToast(type, msg) {
+      const t = document.getElementById('toast');
+      t.className = `auth-toast ${type} show`;
+      t.innerHTML = `<i class="fa fa-${type==='success'?'circle-check':'circle-xmark'}"></i> ${msg}`;
+    }
+
+    // Submit
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const pw    = document.getElementById('password').value;
+
+      let valid = true;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) valid = setError('email',    'E-mail inválido.');  else setOk('email');
+      if (pw.length < 1)                              valid = setError('password', 'Informe sua senha.'); else setOk('password');
+      if (!valid) return;
+
+      const btn     = document.getElementById('submitBtn');
+      const spinner = document.getElementById('spinner');
+      const btnText = document.getElementById('btnText');
+      btn.disabled = true; spinner.style.display = 'block'; btnText.style.display = 'none';
+
+      const hash  = await hashPassword(pw);
+      const users = JSON.parse(localStorage.getItem('velora_users') || '[]');
+      const user  = users.find(u => u.email === email && u.password === hash);
+
+      spinner.style.display = 'none'; btnText.style.display = 'flex'; btn.disabled = false;
+
+      if (!user) {
+        showToast('error', 'E-mail ou senha incorretos.');
+        setError('email', ' ');
+        setError('password', 'Credenciais inválidas.');
+        return;
+      }
+
+      localStorage.setItem('velora_session', JSON.stringify({ id: user.id || user.email, name: user.name, email: user.email }));
+      showToast('success', `Bem-vindo, ${user.name.split(' ')[0]}! Redirecionando…`);
+      setTimeout(() => { window.location.href = 'dashboard.html'; }, 1600);
+    });
+  </script>
+</body>
+</html>

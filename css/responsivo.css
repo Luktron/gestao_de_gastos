@@ -1,0 +1,261 @@
+/* =====================================
+   VELORA - RESPONSIVIDADE
+===================================== */
+
+/* TABLETS */
+
+@media (max-width: 1024px) {
+
+    .sidebar {
+        width: 190px;
+        min-width: 190px;
+    }
+
+    .main-content {
+        margin-left: 190px;
+        padding: 20px;
+    }
+
+    .cards-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+/* CELULARES E TABLETS PEQUENOS */
+
+@media (max-width: 768px) {
+
+    .sidebar {
+        width: 220px;
+        min-width: 220px;
+        transform: translateX(-100%);
+        height: 100vh;
+        border-right: 1px solid #292929;
+        border-bottom: none;
+        flex-direction: column;
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    .sidebar-logo {
+        margin-bottom: 25px;
+        font-size: 21px;
+        text-align: center;
+    }
+
+    .sidebar-menu {
+        flex-direction: column;
+        overflow-x: unset;
+        padding-bottom: 0;
+        gap: 7px;
+    }
+
+    .sidebar-menu a {
+        flex-shrink: unset;
+        font-size: 13px;
+        white-space: normal;
+    }
+
+    .overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.65);
+        z-index: 99;
+    }
+
+    .overlay.open { display: block; }
+
+    .hamburger {
+        display: flex;
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding: 70px 16px 40px;
+        width: 100%;
+    }
+
+    .page-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .page-header h1 {
+        font-size: 21px;
+    }
+
+    .cards-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .card {
+        padding: 14px;
+    }
+
+    .card-value {
+        font-size: 20px;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .filters {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .filters select,
+    .filters input {
+        flex: 1;
+        min-width: 120px;
+    }
+
+    .table-container {
+        overflow-x: auto;
+    }
+
+    /* Auth pages */
+    .auth-page {
+        padding: 20px;
+    }
+
+    /* Topbar adjustments */
+    .header-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+}
+
+/* CELULARES */
+
+@media (max-width: 480px) {
+
+    .auth-page {
+        padding: 15px;
+    }
+
+    .auth-container {
+        padding: 24px 18px;
+    }
+
+    .auth-title {
+        font-size: 21px;
+    }
+
+    .cards-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .main-content {
+        padding: 65px 12px 40px;
+    }
+
+    .card-value {
+        font-size: 22px;
+    }
+
+    .panel {
+        padding: 14px;
+    }
+
+    .page-header h1 {
+        font-size: 19px;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .modal {
+        padding: 12px;
+    }
+
+    .modal-content {
+        padding: 18px;
+    }
+
+    /* Donut em coluna */
+    .donut-wrap {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .donut-container {
+        width: 160px;
+        height: 160px;
+    }
+
+    /* Table */
+    .table-card,
+    .table-container {
+        border-radius: 10px;
+    }
+
+    /* Filter bar */
+    .filter-bar {
+        flex-direction: column;
+    }
+
+    .filter-bar select,
+    .filter-bar input {
+        width: 100%;
+        min-width: unset;
+    }
+
+    /* Summary grid faturas */
+    .summary-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    /* Topbar */
+    .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .topbar-right {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+}
+
+/* TELAS GRANDES */
+
+@media (min-width: 1440px) {
+
+    .main-content {
+        padding: 35px;
+    }
+
+    .cards-grid {
+        gap: 20px;
+    }
+
+    .dashboard-grid {
+        gap: 20px;
+    }
+
+    .sidebar {
+        width: 240px;
+        min-width: 240px;
+    }
+
+    .main-content {
+        margin-left: 240px;
+    }
+
+}

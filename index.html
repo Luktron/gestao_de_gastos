@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VELORA — Gestão Financeira</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── LAYOUT ── */
+    .layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 240px;
+      min-height: 100vh;
+      background: #111;
+      border-right: 1px solid #1e1e1e;
+      display: flex;
+      flex-direction: column;
+      padding: 32px 0;
+      position: fixed;
+      top: 0; left: 0;
+      z-index: 100;
+      transition: transform .3s ease;
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 24px 36px;
+    }
+
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #c0392b, #8b0000);
+      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 900; color: #fff;
+      flex-shrink: 0;
+    }
+
+    .logo-text {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      background: linear-gradient(90deg, #fff, #c0392b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .nav-menu { list-style: none; flex: 1; }
+
+    .nav-menu li a {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 13px 24px;
+      color: #888;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all .2s;
+      border-left: 3px solid transparent;
+    }
+
+    .nav-menu li a:hover {
+      color: #fff;
+      background: rgba(192,57,43,.08);
+      border-left-color: #c0392b;
+    }
+
+    .nav-menu li.active a {
+      color: #e74c3c;
+      background: rgba(192,57,43,.12);
+      border-left-color: #e74c3c;
+      font-weight: 600;
+    }
+
+    .nav-menu li a i { width: 18px; text-align: center; font-size: 15px; }
+
+    .sidebar-footer {
+      padding: 24px;
+      border-top: 1px solid #1e1e1e;
+      font-size: 11px;
+      color: #444;
+      letter-spacing: 1px;
+    }
+
+    /* ── HAMBURGER ── */
+    .hamburger {
+      display: none;
+      position: fixed;
+      top: 18px; left: 18px;
+      z-index: 200;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      color: #e74c3c;
+      width: 42px; height: 42px;
+      border-radius: 8px;
+      font-size: 18px;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.6);
+      z-index: 99;
+    }
+
+    /* ── MAIN ── */
+    .main {
+      margin-left: 240px;
+      flex: 1;
+      min-height: 100vh;
+      background:
+        radial-gradient(ellipse 60% 50% at 80% 20%, rgba(139,0,0,.25) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 10% 80%, rgba(192,57,43,.15) 0%, transparent 60%),
+        #0a0a0a;
+      display: flex;
+      align-items: center;
+      padding: 60px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* glow corners */
+    .main::before {
+      content: '';
+      position: absolute;
+      top: -80px; right: -80px;
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(192,57,43,.3), transparent 70%);
+      pointer-events: none;
+    }
+    .main::after {
+      content: '';
+      position: absolute;
+      bottom: -60px; left: 10%;
+      width: 200px; height: 200px;
+      background: radial-gradient(circle, rgba(192,57,43,.2), transparent 70%);
+      pointer-events: none;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      display: flex;
+      align-items: center;
+      gap: 80px;
+      width: 100%;
+      max-width: 1100px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-content { flex: 1; }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(192,57,43,.15);
+      border: 1px solid rgba(192,57,43,.3);
+      color: #e74c3c;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      margin-bottom: 28px;
+      text-transform: uppercase;
+    }
+
+    .hero-title {
+      font-size: clamp(32px, 4vw, 52px);
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 20px;
+      letter-spacing: -1px;
+    }
+
+    .hero-title span {
+      background: linear-gradient(90deg, #e74c3c, #ff6b6b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-desc {
+      font-size: 16px;
+      color: #aaa;
+      line-height: 1.7;
+      max-width: 480px;
+      margin-bottom: 40px;
+    }
+
+    .hero-buttons { display: flex; gap: 16px; flex-wrap: wrap; }
+
+    .btn-primary {
+      padding: 14px 36px;
+      background: linear-gradient(135deg, #c0392b, #8b0000);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 24px rgba(192,57,43,.4);
+      transition: all .2s;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(192,57,43,.55);
+    }
+
+    .btn-secondary {
+      padding: 14px 36px;
+      background: transparent;
+      color: #ccc;
+      border: 1px solid #333;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all .2s;
+    }
+    .btn-secondary:hover {
+      border-color: #e74c3c;
+      color: #fff;
+      background: rgba(192,57,43,.08);
+    }
+
+    .hero-stats {
+      display: flex;
+      gap: 32px;
+      margin-top: 48px;
+      padding-top: 32px;
+      border-top: 1px solid #1e1e1e;
+    }
+
+    .stat { text-align: left; }
+    .stat-value {
+      font-size: 24px;
+      font-weight: 800;
+      color: #e74c3c;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    /* ── PHONE MOCKUP ── */
+    .hero-visual {
+      flex-shrink: 0;
+      position: relative;
+      width: 280px;
+    }
+
+    .phone {
+      width: 220px;
+      background: linear-gradient(160deg, #1a1a1a, #111);
+      border: 1px solid #2a2a2a;
+      border-radius: 36px;
+      padding: 20px 16px;
+      box-shadow:
+        0 0 0 6px #0f0f0f,
+        0 0 60px rgba(192,57,43,.3),
+        0 40px 80px rgba(0,0,0,.6);
+      transform: rotate(-6deg);
+      margin: 0 auto;
+      position: relative;
+      z-index: 2;
+    }
+
+    .phone-notch {
+      width: 60px; height: 8px;
+      background: #0a0a0a;
+      border-radius: 4px;
+      margin: 0 auto 16px;
+    }
+
+    .phone-brand {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      color: #e74c3c;
+      margin-bottom: 14px;
+    }
+
+    .phone-balance {
+      background: linear-gradient(135deg, #1e0a0a, #2a0d0d);
+      border: 1px solid rgba(192,57,43,.2);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+
+    .phone-balance-label { font-size: 10px; color: #666; margin-bottom: 4px; }
+    .phone-balance-value { font-size: 20px; font-weight: 800; color: #fff; }
+    .phone-balance-change { font-size: 10px; color: #2ecc71; margin-top: 2px; }
+
+    .phone-chart {
+      background: #161616;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .chart-label { font-size: 10px; color: #666; margin-bottom: 8px; }
+
+    .chart-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 5px;
+      height: 50px;
+    }
+
+    .bar {
+      flex: 1;
+      border-radius: 3px 3px 0 0;
+      background: #2a2a2a;
+      transition: height .3s;
+    }
+    .bar.active { background: linear-gradient(180deg, #e74c3c, #8b0000); }
+
+    .phone-items { display: flex; flex-direction: column; gap: 8px; }
+
+    .phone-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #161616;
+      border-radius: 10px;
+      padding: 8px 10px;
+    }
+
+    .phone-item-icon {
+      width: 26px; height: 26px;
+      border-radius: 8px;
+      background: rgba(192,57,43,.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: #e74c3c;
+    }
+
+    .phone-item-info { flex: 1; }
+    .phone-item-name { font-size: 10px; color: #ccc; font-weight: 600; }
+    .phone-item-date { font-size: 9px; color: #555; }
+    .phone-item-val { font-size: 11px; font-weight: 700; }
+    .phone-item-val.neg { color: #e74c3c; }
+    .phone-item-val.pos { color: #2ecc71; }
+
+    /* floating cards */
+    .float-card {
+      position: absolute;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 11px;
+      white-space: nowrap;
+      box-shadow: 0 8px 24px rgba(0,0,0,.4);
+      z-index: 3;
+    }
+
+    .float-card.top-right {
+      top: -20px; right: -30px;
+    }
+
+    .float-card.bottom-left {
+      bottom: 20px; left: -40px;
+    }
+
+    .float-card-label { color: #666; font-size: 10px; }
+    .float-card-value { color: #e74c3c; font-weight: 700; font-size: 14px; margin-top: 2px; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+      .sidebar.open {
+        transform: translateX(0);
+      }
+      .overlay.open { display: block; }
+      .hamburger { display: flex; }
+      .main {
+        margin-left: 0;
+        padding: 80px 24px 40px;
+      }
+      .hero {
+        flex-direction: column;
+        gap: 48px;
+        text-align: center;
+      }
+      .hero-desc { max-width: 100%; }
+      .hero-buttons { justify-content: center; }
+      .hero-stats { justify-content: center; }
+      .hero-visual { width: 100%; display: flex; justify-content: center; }
+      .phone { transform: rotate(0deg); }
+      .float-card.top-right { right: 0; }
+      .float-card.bottom-left { left: 0; }
+    }
+
+    @media (max-width: 480px) {
+      .hero-title { font-size: 28px; }
+      .btn-primary, .btn-secondary { padding: 12px 24px; font-size: 14px; }
+      .hero-stats { gap: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<button class="hamburger" id="hamburger" aria-label="Menu">
+  <i class="fa fa-bars"></i>
+</button>
+
+<div class="overlay" id="overlay"></div>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">V</div>
+      <span class="logo-text">VELORA</span>
+    </div>
+
+    <ul class="nav-menu">
+      <li class="active">
+        <a href="index.html">
+          <i class="fa fa-chart-pie"></i> Visão geral
+        </a>
+      </li>
+      <li>
+        <a href="pages/transacoes.html">
+          <i class="fa fa-arrow-right-arrow-left"></i> Transações
+        </a>
+      </li>
+      <li>
+        <a href="pages/contas.html">
+          <i class="fa fa-credit-card"></i> Cartões e contas
+        </a>
+      </li>
+      <li>
+        <a href="#">
+          <i class="fa fa-file-invoice-dollar"></i> Faturas
+        </a>
+      </li>
+      <li>
+        <a href="pages/planejamento.html">
+          <i class="fa fa-bullseye"></i> Orçamento e metas
+        </a>
+      </li>
+      <li>
+        <a href="pages/configuracoes.html">
+          <i class="fa fa-sliders"></i> Categorias e config.
+        </a>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">© 2025 VELORA</div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="hero">
+
+      <!-- CONTENT -->
+      <div class="hero-content">
+        <div class="hero-badge">
+          <i class="fa fa-shield-halved"></i> Plataforma financeira segura
+        </div>
+
+        <h1 class="hero-title">
+          Inteligência financeira<br>
+          para a sua <span>rotina</span>
+        </h1>
+
+        <p class="hero-desc">
+          Controle, planeje, acompanhe e conquiste seus objetivos com segurança e praticidade.
+        </p>
+
+        <div class="hero-buttons">
+          <a href="pages/login.html" class="btn-primary">
+            <i class="fa fa-right-to-bracket"></i> Entrar
+          </a>
+          <a href="pages/cadastro.html" class="btn-secondary">
+            <i class="fa fa-user-plus"></i> Criar conta
+          </a>
+        </div>
+
+        <div class="hero-stats">
+          <div class="stat">
+            <div class="stat-value">+12k</div>
+            <div class="stat-label">Usuários ativos</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">98%</div>
+            <div class="stat-label">Satisfação</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">256-bit</div>
+            <div class="stat-label">Criptografia</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PHONE MOCKUP -->
+      <div class="hero-visual">
+        <div class="float-card top-right">
+          <div class="float-card-label">Economia mensal</div>
+          <div class="float-card-value">+ R$ 840</div>
+        </div>
+
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-brand">VELORA</div>
+
+          <div class="phone-balance">
+            <div class="phone-balance-label">Saldo disponível</div>
+            <div class="phone-balance-value">R$ 8.450,00</div>
+            <div class="phone-balance-change">▲ +12,4% este mês</div>
+          </div>
+
+          <div class="phone-chart">
+            <div class="chart-label">Crescimento financeiro</div>
+            <div class="chart-bars">
+              <div class="bar" style="height:30%"></div>
+              <div class="bar" style="height:45%"></div>
+              <div class="bar" style="height:35%"></div>
+              <div class="bar" style="height:60%"></div>
+              <div class="bar" style="height:50%"></div>
+              <div class="bar active" style="height:80%"></div>
+              <div class="bar active" style="height:100%"></div>
+            </div>
+          </div>
+
+          <div class="phone-items">
+            <div class="phone-item">
+              <div class="phone-item-icon"><i class="fa fa-cart-shopping"></i></div>
+              <div class="phone-item-info">
+                <div class="phone-item-name">Supermercado</div>
+                <div class="phone-item-date">Hoje</div>
+              </div>
+              <div class="phone-item-val neg">- R$ 230</div>
+            </div>
+            <div class="phone-item">
+              <div class="phone-item-icon"><i class="fa fa-briefcase"></i></div>
+              <div class="phone-item-info">
+                <div class="phone-item-name">Salário</div>
+                <div class="phone-item-date">01 Jul</div>
+              </div>
+              <div class="phone-item-val pos">+ R$ 5.200</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="float-card bottom-left">
+          <div class="float-card-label">Meta atingida</div>
+          <div class="float-card-value">✓ 87%</div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  const hamburger = document.getElementById('hamburger');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('overlay');
+
+  hamburger.addEventListener('click', () => {
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('open');
+  });
+
+  overlay.addEventListener('click', () => {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('open');
+  });
+</script>
+</body>
+</html>

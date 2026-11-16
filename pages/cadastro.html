@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VELORA — Criar conta</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../css/cadastro.css" />
+  <link rel="stylesheet" href="../css/responsivo.css" />
+</head>
+<body class="auth-page">
+
+  <div class="auth-container">
+
+    <div class="auth-logo">
+      <span class="auth-logo-icon">V</span>
+      VEL<span>ORA</span>
+    </div>
+
+    <h1 class="auth-title">Criar sua conta</h1>
+    <p class="auth-subtitle">Comece a organizar suas finanças hoje mesmo.</p>
+
+    <form class="auth-form" id="registerForm" novalidate>
+
+      <!-- Nome -->
+      <div class="auth-group">
+        <label for="name">Nome completo</label>
+        <input type="text" id="name" placeholder="Seu nome completo" autocomplete="name" />
+        <span class="auth-error" id="err-name"><i class="fa fa-circle-exclamation"></i> <span></span></span>
+      </div>
+
+      <!-- E-mail -->
+      <div class="auth-group">
+        <label for="email">E-mail</label>
+        <input type="email" id="email" placeholder="seu@email.com" autocomplete="email" />
+        <span class="auth-error" id="err-email"><i class="fa fa-circle-exclamation"></i> <span></span></span>
+      </div>
+
+      <!-- Senha -->
+      <div class="auth-group">
+        <label for="password">Senha</label>
+        <div class="password-wrapper">
+          <input type="password" id="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password" />
+          <button type="button" class="password-toggle" data-target="password" aria-label="Mostrar senha">
+            <i class="fa fa-eye"></i>
+          </button>
+        </div>
+        <span class="auth-error" id="err-password"><i class="fa fa-circle-exclamation"></i> <span></span></span>
+      </div>
+
+      <!-- Confirmar senha -->
+      <div class="auth-group">
+        <label for="confirm">Confirmar senha</label>
+        <div class="password-wrapper">
+          <input type="password" id="confirm" placeholder="Repita a senha" autocomplete="new-password" />
+          <button type="button" class="password-toggle" data-target="confirm" aria-label="Mostrar senha">
+            <i class="fa fa-eye"></i>
+          </button>
+        </div>
+        <span class="auth-error" id="err-confirm"><i class="fa fa-circle-exclamation"></i> <span></span></span>
+      </div>
+
+      <!-- Toast -->
+      <div class="auth-toast" id="toast"></div>
+
+      <!-- Submit -->
+      <button type="submit" class="auth-button" id="submitBtn">
+        <div class="auth-spinner" id="spinner"></div>
+        <span id="btnText"><i class="fa fa-user-plus"></i> Criar conta</span>
+      </button>
+
+    </form>
+
+    <div class="auth-divider"></div>
+
+    <div class="auth-footer">
+      Já tem uma conta? <a href="login.html">Entrar</a>
+    </div>
+
+  </div>
+
+  <script>
+    // Redirect if already logged in
+    if (JSON.parse(localStorage.getItem('velora_session') || 'null')) {
+      window.location.href = 'dashboard.html';
+    }
+
+    // Toggle senha
+    document.querySelectorAll('.password-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const input = document.getElementById(btn.dataset.target);
+        const isText = input.type === 'text';
+        input.type = isText ? 'password' : 'text';
+        btn.querySelector('i').className = isText ? 'fa fa-eye' : 'fa fa-eye-slash';
+      });
+    });
+
+    // Hash SHA-256
+    async function hashPassword(pw) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+    }
+
+    function setError(fieldId, msg) {
+      const input = document.getElementById(fieldId);
+      const err   = document.getElementById('err-' + fieldId);
+      input.classList.add('error'); input.classList.remove('success');
+      err.querySelector('span').textContent = msg;
+      err.classList.add('show');
+      return false;
+    }
+
+    function setOk(fieldId) {
+      const input = document.getElementById(fieldId);
+      const err   = document.getElementById('err-' + fieldId);
+      input.classList.remove('error'); input.classList.add('success');
+      err.classList.remove('show');
+      return true;
+    }
+
+    function showToast(type, msg) {
+      const t = document.getElementById('toast');
+      t.className = `auth-toast ${type} show`;
+      t.innerHTML = `<i class="fa fa-${type==='success'?'circle-check':'circle-xmark'}"></i> ${msg}`;
+    }
+
+    // Validação blur
+    document.getElementById('name').addEventListener('blur', () => {
+      document.getElementById('name').value.trim().length >= 3 ? setOk('name') : setError('name', 'Informe seu nome completo.');
+    });
+    document.getElementById('email').addEventListener('blur', () => {
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(document.getElementById('email').value.trim()) ? setOk('email') : setError('email', 'E-mail inválido.');
+    });
+    document.getElementById('password').addEventListener('blur', () => {
+      document.getElementById('password').value.length >= 8 ? setOk('password') : setError('password', 'Mínimo 8 caracteres.');
+    });
+    document.getElementById('confirm').addEventListener('blur', () => {
+      const pw = document.getElementById('password').value;
+      const cf = document.getElementById('confirm').value;
+      cf === pw && cf.length > 0 ? setOk('confirm') : setError('confirm', 'As senhas não coincidem.');
+    });
+
+    // Submit
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name  = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const pw    = document.getElementById('password').value;
+      const cf    = document.getElementById('confirm').value;
+
+      let valid = true;
+      if (name.length < 3)                            valid = setError('name',     'Informe seu nome completo.'); else setOk('name');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) valid = setError('email',    'E-mail inválido.');           else setOk('email');
+      if (pw.length < 8)                              valid = setError('password', 'Mínimo 8 caracteres.');       else setOk('password');
+      if (cf !== pw || cf.length === 0)               valid = setError('confirm',  'As senhas não coincidem.');   else setOk('confirm');
+      if (!valid) return;
+
+      const users = JSON.parse(localStorage.getItem('velora_users') || '[]');
+      if (users.find(u => u.email === email)) {
+        showToast('error', 'Este e-mail já está cadastrado.');
+        setError('email', 'E-mail já cadastrado.');
+        return;
+      }
+
+      const btn     = document.getElementById('submitBtn');
+      const spinner = document.getElementById('spinner');
+      const btnText = document.getElementById('btnText');
+      btn.disabled = true; spinner.style.display = 'block'; btnText.style.display = 'none';
+
+      const hash = await hashPassword(pw);
+      users.push({ name, email, password: hash, createdAt: new Date().toISOString() });
+      localStorage.setItem('velora_users', JSON.stringify(users));
+
+      spinner.style.display = 'none'; btnText.style.display = 'flex'; btn.disabled = false;
+      showToast('success', 'Conta criada! Redirecionando…');
+      setTimeout(() => { window.location.href = 'login.html'; }, 1800);
+    });
+  </script>
+</body>
+</html>
